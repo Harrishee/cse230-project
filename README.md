@@ -36,3 +36,4 @@ Currently we've implemented the basic module of the project, using blocks of dif
 - Add more types of maps. 
 - Add more levels and clearance settings. 
 - Optimize item and player icons (optional).
+- Add bomb area which should not be reached or the game will be terminated immediately (optional).
