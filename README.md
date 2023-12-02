@@ -26,3 +26,13 @@ The objective is to collect enough points to pass the level before running out o
 
 - **Programming Language**: `Haskell`
 - **Library**: `brick` (for UI development)
+
+### Updates
+Currently we've implemented the basic module of the project, using blocks of different colors to represent items of different values. There are obstacles in the map that cannot be reached.
+
+### To-do List
+- Add timer. 
+- Make all places the player has reached become obstacles. 
+- Add more types of maps. 
+- Add more levels and clearance settings. 
+- Optimize item and player icons (optional).
