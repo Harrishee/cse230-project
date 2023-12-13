@@ -25,7 +25,10 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
+      Constants
+      Game
+      Maps
+      UI
   other-modules:
       Paths_cse230_project
   autogen-modules:
@@ -34,7 +37,21 @@ library
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , async
+    , base >=4.7 && <5
+    , brick
+    , bytestring
+    , containers
+    , extra
+    , lens
+    , linear
+    , random
+    , text
+    , time
+    , transformers
+    , unordered-containers
+    , vty
   default-language: Haskell2010
 
 executable cse230-project-exe
@@ -47,8 +64,22 @@ executable cse230-project-exe
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , async
+    , base >=4.7 && <5
+    , brick
+    , bytestring
+    , containers
     , cse230-project
+    , extra
+    , lens
+    , linear
+    , random
+    , text
+    , time
+    , transformers
+    , unordered-containers
+    , vty
   default-language: Haskell2010
 
 test-suite cse230-project-test
@@ -62,6 +93,20 @@ test-suite cse230-project-test
       test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , async
+    , base >=4.7 && <5
+    , brick
+    , bytestring
+    , containers
     , cse230-project
+    , extra
+    , lens
+    , linear
+    , random
+    , text
+    , time
+    , transformers
+    , unordered-containers
+    , vty
   default-language: Haskell2010
