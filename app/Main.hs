@@ -1,6 +1,6 @@
 module Main (main) where
 
-import Lib
+import UI (drawGame)
 
 main :: IO ()
-main = someFunc
+main = drawGame
