@@ -298,7 +298,7 @@ drawCell (ItemCell item) =
     Silver -> withAttr silverAttr (str silverChar)
     Gold -> withAttr goldAttr (str goldChar)
     WallBreaker-> withAttr wallBreakerAttr (str wallBreakerChar)
-    Game.WallBreaker -> withAttr wallBreakerAttr (str "WA")
+    Teleport -> withAttr teleportAttr (str "T ")
     Bomb -> withAttr bombAttr (str bombChar)
 drawCell Empty = withAttr emptyAttr (str eChar)
 drawCell Wall = withAttr wallAttr (str wallChar)
