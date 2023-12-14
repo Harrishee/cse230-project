@@ -72,7 +72,7 @@ movePlayer d g =
       isWall = nextHeadPos `elem` (g ^. walls)
       isTrail = nextHeadPos `elem` (g ^. playerTrail)
    in if isWall || isTrail
-        then g & dead .~ True
+        then g
         else
           let newPlayerPos = nextHeadPos <| S.take (S.length (g ^. player) - 1) (g ^. player)
               newPlayerTrail = g ^. playerTrail S.|> S.index (g ^. player) 0
