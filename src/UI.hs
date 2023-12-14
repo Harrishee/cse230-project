@@ -225,12 +225,12 @@ drawInventory inv =
   withBorderStyle BS.unicodeBold $
     B.borderWithLabel (str "Inventory") $
       vBox
-        [ padLeftRight 1 $ padAll 1 $ withAttr bronzeAttr $ str $ "Fries: " ++ showQuantity 0,
-          padLeftRight 1 $ padAll 1 $ withAttr silverAttr $ str $ "Hotdog: " ++ showQuantity 1,
-          padLeftRight 1 $ padAll 1 $ withAttr goldAttr $ str $ "Burger: " ++ showQuantity 2,
-          padLeftRight 1 $ padAll 1 $ withAttr wallBreakerAttr $ str $ "WallBreaker: " ++ showQuantity 3,
-          padLeftRight 1 $ padAll 1 $ withAttr wallBreakerAttr $ str $ "Teleport: " ++ showQuantity 4,
-          padLeftRight 1 $ padAll 1 $ withAttr bombAttr $ str $ "Bomb: " ++ showQuantity 5
+        -- [ padLeftRight 1 $ padAll 1 $ withAttr bronzeAttr $ str $ "Fries: " ++ showQuantity 0,
+        --   padLeftRight 1 $ padAll 1 $ withAttr silverAttr $ str $ "Hotdog: " ++ showQuantity 1,
+        --   padLeftRight 1 $ padAll 1 $ withAttr goldAttr $ str $ "Burger: " ++ showQuantity 2,
+          [padLeftRight 1 $ padAll 1 $ withAttr wallBreakerAttr $ str $ "WallBreaker: " ++ showQuantity 3,
+          padLeftRight 1 $ padAll 1 $ withAttr wallBreakerAttr $ str $ "Teleport: " ++ showQuantity 4
+          -- padLeftRight 1 $ padAll 1 $ withAttr bombAttr $ str $ "Bomb: " ++ showQuantity 5
         ]
   where
     showQuantity n = maybe "0" (show . Game.itemQuantity) (safeGet n inv)
