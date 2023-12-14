@@ -18,7 +18,7 @@ predefinedItems :: Seq Item
 predefinedItems = S.fromList [
     Item Bronze (V2 1 3), Item Silver (V2 2 5), Item Gold (V2 3 7),
     Item Bronze (V2 4 9), Item Silver (V2 5 11), Item Gold (V2 6 13),
-    Item Bronze (V2 7 2), Item Silver (V2 8 4), Item Gold (V2 9 6),
+    Item Bronze (V2 7 2), Item Bomb (V2 8 4), Item Gold (V2 9 6),
     Item Bronze (V2 10 8), Item Pickable (V2 11 10), Item Gold (V2 12 12),
     Item Silver (V2 13 14)
   ]
