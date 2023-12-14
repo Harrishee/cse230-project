@@ -154,10 +154,10 @@ drawUI g =
         then drawStatus g
         else
           hBox
-            [ padRight (Pad 2) $ drawInventory (Game._inventory g),
+            [ padRight (Pad 3) infoBox,
+              padRight (Pad 2) $ drawInventory (Game._inventory g),
               padRight (Pad 3) $ drawGoal g,
-              drawGrid g,
-              padLeft (Pad 3) infoBox
+              drawGrid g
             ]
   ]
 
@@ -214,8 +214,7 @@ drawGameOver =
 drawGrid :: Game.Game -> Widget Name
 drawGrid g =
   withBorderStyle BS.unicodeBold $
-    B.borderWithLabel (str "Player") $
-      vBox rows
+    vBox rows
   where
     currentLevel = Game._currentLevel g
     currentLevelHeight = levelHeight currentLevel
@@ -231,35 +230,61 @@ drawGrid g =
       | otherwise = Empty
 
 drawCell :: Cell -> Widget Name
-drawCell Player = withAttr playerAttr cw
-drawCell PlayerTrail = withAttr playerTrailAttr cw
+drawCell Player = withAttr playerAttr (str playerChar)
+drawCell PlayerTrail = withAttr playerTrailAttr (str playerTrailChar)
 drawCell (ItemCell item) =
-  case Game.itemType item of
-    Game.Bronze -> withAttr bronzeAttr (str "B ")
-    Game.Silver -> withAttr silverAttr (str "S ")
-    Game.Gold -> withAttr goldAttr (str "G ")
-    Game.WallBreaker -> withAttr wallBreakerAttr (str "P ")
-    Game.Bomb -> withAttr bombAttr (str "X ")
-drawCell Empty = withAttr emptyAttr cw
-drawCell Wall = withAttr wallAttr cw
+  case itemType item of
+    Bronze -> withAttr bronzeAttr (str bronzeChar)
+    Silver -> withAttr silverAttr (str silverChar)
+    Gold -> withAttr goldAttr (str goldChar)
+    WallBreaker-> withAttr wallBreakerAttr (str wallBreakerChar)
+    Bomb -> withAttr bombAttr (str bombChar)
+drawCell Empty = withAttr emptyAttr (str eChar)
+drawCell Wall = withAttr wallAttr (str wallChar)
 
-cw :: Widget Name
-cw = str "  "
+
+eChar :: String
+eChar = "🟦 "
+
+wallBreakerChar :: String
+wallBreakerChar="🧨 "
+
+playerChar :: String
+playerChar = "🚍 "
+
+playerTrailChar :: String
+playerTrailChar ="🚩 "
+
+goldChar :: String
+goldChar="🍔 "
+
+silverChar :: String
+silverChar="🌭 "
+
+bronzeChar :: String
+bronzeChar="🍟 "
+
+bombChar :: String
+bombChar="🎆 "
+
+wallChar :: String
+wallChar="🧱 "
+
 
 theMap :: AttrMap
 theMap =
   attrMap
     V.defAttr
-    [ (playerAttr, V.blue `on` V.blue),
-      (playerTrailAttr, V.white `on` V.white),
+    [ (playerAttr, V.blue `on` V.black),
+      (playerTrailAttr, V.white `on` V.black),
       (gameOverAttr, fg V.red `V.withStyle` V.bold),
       (gamePassedAttr, fg V.green `V.withStyle` V.bold),
-      (wallAttr, V.white `on` V.white),
-      (bronzeAttr, V.magenta `on` V.magenta),
-      (silverAttr, V.cyan `on` V.cyan),
-      (goldAttr, V.yellow `on` V.yellow),
-      (wallBreakerAttr, V.green `on` V.green),
-      (bombAttr, V.red `on` V.red),
+      (wallAttr, V.white `on` V.black),
+      (bronzeAttr, V.magenta `on` V.black),
+      (silverAttr, V.cyan `on` V.black),
+      (goldAttr, V.yellow `on` V.black),
+      (wallBreakerAttr, V.green `on` V.black),
+      (bombAttr, V.red `on` V.black),
       (levelAttr, fg V.blue),
       (whiteTextAttr, fg V.white)
     ]
