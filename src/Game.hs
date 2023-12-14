@@ -19,6 +19,8 @@ module Game
     gameStarted,
     timeElapsed,
     gamePassed,
+    initialTime,
+    initialGoal
   )
 where
 
@@ -40,7 +42,9 @@ data Game = Game
     _dead :: Bool,
     _timeElapsed :: Int,
     _gameStarted :: Bool,
-    _gamePassed :: Bool
+    _gamePassed :: Bool,
+    _initialGoal :: Int,
+    _initialTime :: Int
   }
   deriving (Show)
 
@@ -108,7 +112,9 @@ startGame = do
             _dead = False,
             _walls = predefinedWalls,
             _gameStarted = False,
-            _timeElapsed = 0,
-            _gamePassed = False
+            _timeElapsed = 20,
+            _gamePassed = False,
+            _initialGoal = 20,
+            _initialTime = 20
           }
   return g
