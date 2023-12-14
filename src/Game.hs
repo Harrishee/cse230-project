@@ -72,16 +72,16 @@ movePlayer d g =
           else g & dir .~ d & gameStarted .~ True
       nextHeadPos = nextPos movedG
       isBomb = isNextPositionBomb movedG
-      hasPickable = hasPickableItem g
+      hasWallBreaker = hasWallBreakerItem g
       isWall = nextHeadPos `elem` (g ^. walls)
       isTrail = nextHeadPos `elem` (g ^. playerTrail)
    in if isBomb
         then g & dead .~ True
         else
-          if (isWall || isTrail) && (not hasPickable || (hasPickable && not (isWall || isTrail)))
+          if (isWall || isTrail) && (not hasWallBreaker || (hasWallBreaker && not (isWall || isTrail)))
             then g
             else
-              if hasPickable && (isWall || isTrail)
+              if hasWallBreaker && (isWall || isTrail)
                 then
                   let newPlayerPos = nextHeadPos <| S.take (S.length (g ^. player) - 1) (g ^. player)
                       newPlayerTrail = g ^. playerTrail S.|> S.index (g ^. player) 0
@@ -89,7 +89,7 @@ movePlayer d g =
                         movedG
                           & player .~ newPlayerPos
                           & playerTrail .~ newPlayerTrail
-                          & inventory %~ consumePickableItem
+                          & inventory %~ consumeWallBreakerItem
                    in checkLevelCompletion $ pickUpItem updatedGame nextHeadPos
                 else
                   let newPlayerPos = nextHeadPos <| S.take (S.length (g ^. player) - 1) (g ^. player)
@@ -97,15 +97,15 @@ movePlayer d g =
                       updatedGame = movedG & player .~ newPlayerPos & playerTrail .~ newPlayerTrail
                    in checkLevelCompletion $ pickUpItem updatedGame nextHeadPos
 
-consumePickableItem :: [InventoryItem] -> [InventoryItem]
-consumePickableItem [] = []
-consumePickableItem (item : rest)
-  | itemName item == Pickable && itemQuantity item > 0 = item {itemQuantity = itemQuantity item - 1} : rest
-  | otherwise = item : consumePickableItem rest
+consumeWallBreakerItem :: [InventoryItem] -> [InventoryItem]
+consumeWallBreakerItem [] = []
+consumeWallBreakerItem (item : rest)
+  | itemName item == WallBreaker && itemQuantity item > 0 = item {itemQuantity = itemQuantity item - 1} : rest
+  | otherwise = item : consumeWallBreakerItem rest
 
-hasPickableItem :: Game -> Bool
-hasPickableItem game =
-  case find (\item -> itemName item == Pickable && itemQuantity item > 0) (_inventory game) of
+hasWallBreakerItem :: Game -> Bool
+hasWallBreakerItem game =
+  case find (\item -> itemName item == WallBreaker && itemQuantity item > 0) (_inventory game) of
     Just _ -> True
     Nothing -> False
 
@@ -169,9 +169,11 @@ resetGameStateForNewLevel level game =
       _dir = MUp,
       _dead = False,
       _gameStarted = False,
+      _initialGoal = levelScoreRequired level,
+      _initialTime = levelTimeRequired level,
       _timeElapsed = levelTimeRequired level,
       _currentLevel = level,
-      _inventory = [InventoryItem Bronze 0, InventoryItem Silver 0, InventoryItem Gold 0, InventoryItem Pickable 0, InventoryItem Bomb 0]
+      _inventory = [InventoryItem Bronze 0, InventoryItem Silver 0, InventoryItem Gold 0, InventoryItem WallBreaker 0, InventoryItem Bomb 0]
     }
   where
     initialPlayerPosition = V2 (levelWidth level `div` 2) (levelHeight level `div` 2)
@@ -204,8 +206,8 @@ startGame = do
             _gameStarted = False,
             _timeElapsed = levelTimeRequired initialLevel,
             _gamePassed = False,
-            _initialGoal = 20,
-            _initialTime = 20,
+            _initialGoal = levelScoreRequired initialLevel,
+            _initialTime = levelTimeRequired initialLevel,
             _inventory = initialInventory,
             _currentLevel = initialLevel,
             _levels = lv

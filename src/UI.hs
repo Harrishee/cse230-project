@@ -44,7 +44,7 @@ import Game
     Game (_currentLevel, _inventory, _items, _walls),
     InventoryItem (itemQuantity),
     Item (itemCoord, itemType),
-    ItemType (Bomb, Bronze, Gold, Pickable, Silver),
+    ItemType (Bomb, Bronze, Gold, WallBreaker, Silver),
     dead,
     gamePassed,
     initialGoal,
@@ -169,7 +169,7 @@ drawInventory inv =
         [ padLeftRight 1 $ padAll 1 $ withAttr bronzeAttr $ str $ "Bronze: " ++ showQuantity 0,
           padLeftRight 1 $ padAll 1 $ withAttr silverAttr $ str $ "Silver: " ++ showQuantity 1,
           padLeftRight 1 $ padAll 1 $ withAttr goldAttr $ str $ "Gold: " ++ showQuantity 2,
-          padLeftRight 1 $ padAll 1 $ withAttr pickableAttr $ str $ "Pickable: " ++ showQuantity 3,
+          padLeftRight 1 $ padAll 1 $ withAttr wallBreakerAttr $ str $ "WallBreaker: " ++ showQuantity 3,
           padLeftRight 1 $ padAll 1 $ withAttr bombAttr $ str $ "Bomb: " ++ showQuantity 4
         ]
   where
@@ -238,7 +238,7 @@ drawCell (ItemCell item) =
     Game.Bronze -> withAttr bronzeAttr (str "B ")
     Game.Silver -> withAttr silverAttr (str "S ")
     Game.Gold -> withAttr goldAttr (str "G ")
-    Game.Pickable -> withAttr pickableAttr cw
+    Game.WallBreaker -> withAttr wallBreakerAttr cw
     Game.Bomb -> withAttr bombAttr cw
 drawCell Empty = withAttr emptyAttr cw
 drawCell Wall = withAttr wallAttr cw
@@ -258,13 +258,13 @@ theMap =
       (bronzeAttr, V.magenta `on` V.magenta),
       (silverAttr, V.cyan `on` V.cyan),
       (goldAttr, V.yellow `on` V.yellow),
-      (pickableAttr, V.green `on` V.green),
+      (wallBreakerAttr, V.green `on` V.green),
       (bombAttr, V.red `on` V.red),
       (levelAttr, fg V.blue),
       (whiteTextAttr, fg V.white)
     ]
 
-playerAttr, playerTrailAttr, emptyAttr, wallAttr, bronzeAttr, silverAttr, goldAttr, pickableAttr, bombAttr, levelAttr, gameOverAttr, gamePassedAttr, whiteTextAttr :: AttrName
+playerAttr, playerTrailAttr, emptyAttr, wallAttr, bronzeAttr, silverAttr, goldAttr, wallBreakerAttr, bombAttr, levelAttr, gameOverAttr, gamePassedAttr, whiteTextAttr :: AttrName
 playerAttr = "playerAttr"
 playerTrailAttr = "playerTrailAttr"
 emptyAttr = "emptyAttr"
@@ -272,7 +272,7 @@ wallAttr = "wallAttr"
 bronzeAttr = "bronzeAttr"
 silverAttr = "silverAttr"
 goldAttr = "goldAttr"
-pickableAttr = "pickableAttr"
+wallBreakerAttr = "wallBreakerAttr"
 bombAttr = "bombAttr"
 levelAttr = "levelAttr"
 gameOverAttr = "gameOver"
@@ -287,8 +287,9 @@ infoBox =
         B.borderWithLabel (str "Guidelines and Controls") $
           vBox
             [ str "Guidelines:",
-              str "  Collect items to increase your score",
+              str "  Collect items to reach the goal",
               str "  Please avoid walls and bombs",
+              str "  You cannot walk back",
               str "\n",
               str "Controls:",
               str "  ↑: Move Up",
@@ -298,8 +299,8 @@ infoBox =
               str "  q: to quit in the game",
               str "\n",
               str "Item Values:",
-              str "  Bronze: 1",
-              str "  Silver: 2",
-              str "  Gold:   5",
-              str "  pickable: 0"
+              str "  Bronze: 1 | Silver: 2 | Gold: 5",
+              str "Consumable:",
+              str "  Wall Breaker: Break one wall",
+              str "  More consumables is on the way...."
             ]
