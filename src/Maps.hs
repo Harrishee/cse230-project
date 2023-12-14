@@ -6,7 +6,7 @@ module Maps
   ) where
 
 import System.Random (randomRIO)
-import Data.Sequence (Seq, fromList)
+import Data.Sequence (Seq)
 import qualified Data.Sequence as S
 import Linear.V2 (V2(..))
 import Constants (ItemType(..))
@@ -17,7 +17,7 @@ data Item = Item { itemType :: ItemType, itemCoord :: Coord } deriving (Eq, Show
 type LevelMaps = [([Coord], [Item])]
 
 predefinedMaps :: [LevelMaps]
-predefinedMaps = 
+predefinedMaps =
     [
         [ -- Level 1 10x10 5pt
             ([V2 1 4, V2 2 4, V2 4 3], [Item Bronze (V2 1 3), Item Silver (V2 2 5), Item Gold (V2 3 7)]),
@@ -65,7 +65,7 @@ getRandomMap levelId = do
     return (S.fromList walls, S.fromList items)
 
 predefinedWalls :: Int -> IO (Seq Coord)
-predefinedWalls levelId = fmap fst $ getRandomMap levelId
+predefinedWalls levelId = fst <$> getRandomMap levelId
 
 predefinedItems :: Int -> IO (Seq Item)
-predefinedItems levelId = fmap snd $ getRandomMap levelId
+predefinedItems levelId = snd <$> getRandomMap levelId

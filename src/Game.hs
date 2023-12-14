@@ -77,28 +77,30 @@ movePlayer d g =
       isTrail = nextHeadPos `elem` (g ^. playerTrail)
    in if isBomb
         then g & dead .~ True
-        else if (isWall || isTrail) && (not hasPickable || (hasPickable && not (isWall || isTrail)))
-          then g
-          else if hasPickable && (isWall || isTrail)
-            then
-              let newPlayerPos = nextHeadPos <| S.take (S.length (g ^. player) - 1) (g ^. player)
-                  newPlayerTrail = g ^. playerTrail S.|> S.index (g ^. player) 0
-                  updatedGame =
-                    movedG
-                      & player .~ newPlayerPos
-                      & playerTrail .~ newPlayerTrail
-                      & inventory %~ consumePickableItem
-               in checkLevelCompletion $ pickUpItem updatedGame nextHeadPos
+        else
+          if (isWall || isTrail) && (not hasPickable || (hasPickable && not (isWall || isTrail)))
+            then g
             else
-              let newPlayerPos = nextHeadPos <| S.take (S.length (g ^. player) - 1) (g ^. player)
-                  newPlayerTrail = g ^. playerTrail S.|> S.index (g ^. player) 0
-                  updatedGame = movedG & player .~ newPlayerPos & playerTrail .~ newPlayerTrail
-               in checkLevelCompletion $ pickUpItem updatedGame nextHeadPos
+              if hasPickable && (isWall || isTrail)
+                then
+                  let newPlayerPos = nextHeadPos <| S.take (S.length (g ^. player) - 1) (g ^. player)
+                      newPlayerTrail = g ^. playerTrail S.|> S.index (g ^. player) 0
+                      updatedGame =
+                        movedG
+                          & player .~ newPlayerPos
+                          & playerTrail .~ newPlayerTrail
+                          & inventory %~ consumePickableItem
+                   in checkLevelCompletion $ pickUpItem updatedGame nextHeadPos
+                else
+                  let newPlayerPos = nextHeadPos <| S.take (S.length (g ^. player) - 1) (g ^. player)
+                      newPlayerTrail = g ^. playerTrail S.|> S.index (g ^. player) 0
+                      updatedGame = movedG & player .~ newPlayerPos & playerTrail .~ newPlayerTrail
+                   in checkLevelCompletion $ pickUpItem updatedGame nextHeadPos
 
 consumePickableItem :: [InventoryItem] -> [InventoryItem]
 consumePickableItem [] = []
 consumePickableItem (item : rest)
-  | itemName item == Pickable && itemQuantity item > 0 = item { itemQuantity = itemQuantity item - 1 } : rest
+  | itemName item == Pickable && itemQuantity item > 0 = item {itemQuantity = itemQuantity item - 1} : rest
   | otherwise = item : consumePickableItem rest
 
 hasPickableItem :: Game -> Bool
@@ -111,10 +113,10 @@ isNextPositionBomb :: Game -> Bool
 isNextPositionBomb game =
   let nextHeadPos = nextPos game
       itemsAtNextPos = findItemsAtCoord nextHeadPos (_items game)
-  in any (\item -> itemType item == Bomb) itemsAtNextPos
+   in any (\item -> itemType item == Bomb) itemsAtNextPos
 
 findItemsAtCoord :: Coord -> Seq Item -> Seq Item
-findItemsAtCoord coord items = S.filter (\item -> itemCoord item == coord) items
+findItemsAtCoord coord = S.filter (\item -> itemCoord item == coord)
 
 pickUpItem :: Game -> Coord -> Game
 pickUpItem game coord =
@@ -139,7 +141,7 @@ addItemToInventory newItemName (item : rest)
   | otherwise = item : addItemToInventory newItemName rest
 
 nextPos :: Game -> Coord
-nextPos game@(Game {_dir = d, _player = (a :<| _), _currentLevel = level}) =
+nextPos game@Game {_dir = d, _player = (a :<| _), _currentLevel = level} =
   let currentLevelWidth = levelWidth level
       currentLevelHeight = levelHeight level
       newPos = case d of
@@ -149,7 +151,6 @@ nextPos game@(Game {_dir = d, _player = (a :<| _), _currentLevel = level}) =
         MRight -> a & _x %~ (\x -> min (x + 1) (currentLevelWidth - 1))
    in newPos
 nextPos _ = error "Player can't be empty!"
-
 
 checkLevelCompletion :: Game -> Game
 checkLevelCompletion game =
@@ -168,14 +169,12 @@ resetGameStateForNewLevel level game =
       _dir = MUp,
       _dead = False,
       _gameStarted = False,
-      _timeElapsed = _initialTime game,
+      _timeElapsed = levelTimeRequired level,
       _currentLevel = level,
       _inventory = [InventoryItem Bronze 0, InventoryItem Silver 0, InventoryItem Gold 0, InventoryItem Pickable 0, InventoryItem Bomb 0]
     }
   where
     initialPlayerPosition = V2 (levelWidth level `div` 2) (levelHeight level `div` 2)
-
-
 
 moveToNextLevel :: Game -> Game
 moveToNextLevel game =
@@ -188,8 +187,8 @@ moveToNextLevel game =
 
 startGame :: IO Game
 startGame = do
-  levels <- initializeLevels -- Extract the list of levels from the IO action
-  let initialLevel = head levels -- Now you can use `levels` as a normal list
+  lv <- initializeLevels -- Extract the list of levels from the IO action
+  let initialLevel = head lv -- Now you can use `levels` as a normal list
   let xm = levelWidth initialLevel `div` 2
   let ym = levelHeight initialLevel `div` 2
   let initialInventory = [InventoryItem Bronze 0, InventoryItem Silver 0, InventoryItem Gold 0]
@@ -203,14 +202,12 @@ startGame = do
             _dead = False,
             _walls = levelWalls initialLevel,
             _gameStarted = False,
-            _timeElapsed = 20,
+            _timeElapsed = levelTimeRequired initialLevel,
             _gamePassed = False,
             _initialGoal = 20,
             _initialTime = 20,
             _inventory = initialInventory,
             _currentLevel = initialLevel,
-            _levels = levels
+            _levels = lv
           }
   return g
-
-
