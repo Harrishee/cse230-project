@@ -213,10 +213,10 @@ drawUI g =
         then drawStatus g
         else
           hBox
-            [ padRight (Pad 2) $ drawInventory (Game._inventory g),
+            [ padRight (Pad 3) infoBox,
+              padRight (Pad 2) $ drawInventory (Game._inventory g),
               padRight (Pad 3) $ drawGoal g,
-              drawGrid g,
-              padLeft (Pad 3) infoBox
+              drawGrid g
             ]
   ]
 
@@ -225,9 +225,9 @@ drawInventory inv =
   withBorderStyle BS.unicodeBold $
     B.borderWithLabel (str "Inventory") $
       vBox
-        [ padLeftRight 1 $ padAll 1 $ withAttr bronzeAttr $ str $ "Bronze: " ++ showQuantity 0,
-          padLeftRight 1 $ padAll 1 $ withAttr silverAttr $ str $ "Silver: " ++ showQuantity 1,
-          padLeftRight 1 $ padAll 1 $ withAttr goldAttr $ str $ "Gold: " ++ showQuantity 2,
+        [ padLeftRight 1 $ padAll 1 $ withAttr bronzeAttr $ str $ "Fries: " ++ showQuantity 0,
+          padLeftRight 1 $ padAll 1 $ withAttr silverAttr $ str $ "Hotdog: " ++ showQuantity 1,
+          padLeftRight 1 $ padAll 1 $ withAttr goldAttr $ str $ "Burger: " ++ showQuantity 2,
           padLeftRight 1 $ padAll 1 $ withAttr wallBreakerAttr $ str $ "WallBreaker: " ++ showQuantity 3,
           padLeftRight 1 $ padAll 1 $ withAttr wallBreakerAttr $ str $ "Teleport: " ++ showQuantity 4,
           padLeftRight 1 $ padAll 1 $ withAttr bombAttr $ str $ "Bomb: " ++ showQuantity 5
@@ -274,8 +274,7 @@ drawGameOver =
 drawGrid :: Game.Game -> Widget Name
 drawGrid g =
   withBorderStyle BS.unicodeBold $
-    B.borderWithLabel (str "Player") $
-      vBox rows
+    vBox rows
   where
     currentLevel = Game._currentLevel g
     currentLevelHeight = levelHeight currentLevel
@@ -291,28 +290,53 @@ drawGrid g =
       | otherwise = Empty
 
 drawCell :: Cell -> Widget Name
-drawCell Player = withAttr playerAttr cw
-drawCell PlayerTrail = withAttr playerTrailAttr cw
+drawCell Player = withAttr playerAttr (str playerChar)
+drawCell PlayerTrail = withAttr playerTrailAttr (str playerTrailChar)
 drawCell (ItemCell item) =
-  case Game.itemType item of
-    Game.Bronze -> withAttr bronzeAttr (str "B ")
-    Game.Silver -> withAttr silverAttr (str "S ")
-    Game.Gold -> withAttr goldAttr (str "G ")
+  case itemType item of
+    Bronze -> withAttr bronzeAttr (str bronzeChar)
+    Silver -> withAttr silverAttr (str silverChar)
+    Gold -> withAttr goldAttr (str goldChar)
+    WallBreaker-> withAttr wallBreakerAttr (str wallBreakerChar)
     Game.WallBreaker -> withAttr wallBreakerAttr (str "WA")
-    Game.Teleport -> withAttr teleportAttr (str "T ")
-    Game.Bomb -> withAttr bombAttr (str "X ")
-drawCell Empty = withAttr emptyAttr cw
-drawCell Wall = withAttr wallAttr cw
+    Bomb -> withAttr bombAttr (str bombChar)
+drawCell Empty = withAttr emptyAttr (str eChar)
+drawCell Wall = withAttr wallAttr (str wallChar)
 
-cw :: Widget Name
-cw = str "  "
+
+eChar :: String
+eChar = "🟦 "
+
+wallBreakerChar :: String
+wallBreakerChar="🧨 "
+
+playerChar :: String
+playerChar = "🚒 "
+
+playerTrailChar :: String
+playerTrailChar ="🚩 "
+
+goldChar :: String
+goldChar="🍔 "
+
+silverChar :: String
+silverChar="🌭 "
+
+bronzeChar :: String
+bronzeChar="🍟 "
+
+bombChar :: String
+bombChar="🎆 "
+
+wallChar :: String
+wallChar="🧱 "
 
 theMap :: AttrMap
 theMap =
   attrMap
     V.defAttr
-    [ (playerAttr, V.blue `on` V.blue),
-      (playerTrailAttr, V.white `on` V.white),
+    [ (playerAttr, V.blue `on` V.black),
+      (playerTrailAttr, V.white `on` V.black),
       (gameOverAttr, fg V.red `V.withStyle` V.bold),
       (gamePassedAttr, fg V.green `V.withStyle` V.bold),
       (wallAttr, V.white `on` V.white),
@@ -363,7 +387,7 @@ infoBox =
               str "  t: Use Teleport Item",
               str "\n",
               str "Item Values:",
-              str "  Bronze: 1 | Silver: 2 | Gold: 5",
+              str "  Fries: 1 | Hotdog: 2 | Burger: 5",
               str "\n",
               str "Consumable:",
               str "  Wall Breaker: Break one wall",
