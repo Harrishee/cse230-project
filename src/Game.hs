@@ -21,8 +21,8 @@ module Game
     initialTime,
     initialGoal,
     initializeLevels,
-    selectedLevel,
-    isLevelSelection,
+    selectedDifficulty,
+    isDifficultySelection,
   )
 where
 
@@ -37,8 +37,8 @@ import Maps (Coord, Item (..))
 
 data Game = Game
   { 
-    _isLevelSelection :: Bool,
-    _selectedLevel :: Int,
+    _isDifficultySelection :: Bool,
+    _selectedDifficulty :: Int,
     _player :: Player,
     _playerTrail :: Seq Coord,
     _items :: Seq Item,
@@ -220,7 +220,7 @@ startGame = do
             _inventory = initialInventory,
             _currentLevel = initialLevel,
             _levels = lv,
-            _isLevelSelection = True,
-            _selectedLevel = 0
+            _isDifficultySelection = True,
+            _selectedDifficulty = 0
           }
   return g
