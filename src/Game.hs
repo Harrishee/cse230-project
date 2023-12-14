@@ -141,7 +141,7 @@ addItemToInventory newItemName (item : rest)
   | otherwise = item : addItemToInventory newItemName rest
 
 nextPos :: Game -> Coord
-nextPos game@Game {_dir = d, _player = (a :<| _), _currentLevel = level} =
+nextPos game@Game { _dir = d, _player = (a :<| _), _currentLevel = level } =
   let currentLevelWidth = levelWidth level
       currentLevelHeight = levelHeight level
       newX = case d of
