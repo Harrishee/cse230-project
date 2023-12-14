@@ -138,12 +138,16 @@ restartGame = liftIO startGame >>= continue
 updateGame :: Float -> Game -> Game
 updateGame deltaTime g
   | g ^. gamePassed = g
+  | g ^. timeElapsed <= 0 =
+      let hasReachedGoal = g ^. score >= g ^. initialGoal
+      in if hasReachedGoal
+           then g & gamePassed .~ True
+           else g & dead .~ True
   | otherwise = 
       let newTime = max 0 (g ^. timeElapsed - round deltaTime)
           newGame = g & timeElapsed .~ newTime
           hasReachedGoal = g ^. score >= g ^. initialGoal
-          timeRemaining = newTime > 0
-      in if hasReachedGoal && timeRemaining
+      in if hasReachedGoal
            then newGame & gamePassed .~ True
            else newGame
 
@@ -153,7 +157,7 @@ drawUI g =
       hBox
         [ padRight (Pad 2) $ drawGoal g,
           padRight (Pad 2) $ drawInventory (_inventory g),
-          padRight (Pad 2) $ drawStatsAndTimer g,
+          padRight (Pad 2) $ drawStats g,
           drawGrid g,
           padLeft (Pad 2) $ infoBox
         ]
@@ -167,28 +171,18 @@ drawInventory (invItem : rest) =
       drawInventory rest
     ]
 
-drawStatsAndTimer :: Game -> Widget Name
-drawStatsAndTimer g =
-  vBox
-    [ drawStats g,
-      padTop (Pad 2) $ drawTimer g
-    ]
-
-drawTimer :: Game -> Widget Name
-drawTimer g =
-  hLimit 11 $
-    withBorderStyle BS.unicodeBold $
-      B.borderWithLabel (str "Time") $
-        C.hCenter $
-          padAll 1 $
-            str $ show (g ^. timeElapsed) ++ "s"
-
 drawStats :: Game -> Widget Name
-drawStats g =
-  hLimit 11 $
+drawStats g
+  | g ^. dead || g ^. gamePassed || g ^. timeElapsed <= 0 =
     vBox
       [ drawScore (g ^. score),
-        padTop (Pad 2) $ drawGameOver g
+        padTop (Pad 2) $ drawStatus g,
+        padTop (Pad 2) $ drawTimer g
+      ]
+  | otherwise =
+    vBox
+      [ drawScore (g ^. score),
+        padTop (Pad 2) $ drawTimer g
       ]
 
 drawScore :: Int -> Widget Name
@@ -199,6 +193,15 @@ drawScore n =
         padAll 1 $
           str $ show n
 
+drawTimer :: Game -> Widget Name
+drawTimer g =
+  hLimit 11 $
+    withBorderStyle BS.unicodeBold $
+      B.borderWithLabel (str "Time") $
+        C.hCenter $
+          padAll 1 $
+            str $ show (g ^. timeElapsed) ++ "s"
+
 drawGoal :: Game -> Widget Name
 drawGoal g =
   withBorderStyle BS.unicodeBold $
@@ -208,17 +211,26 @@ drawGoal g =
           padAll 1 $ str $ "Time Limit: " ++ show (g ^. initialTime) ++ "s"
         ]
 
-drawGameOver :: Game -> Widget Name
-drawGameOver g =
-  if g ^. dead || g ^. gamePassed
-    then withAttr (if g ^. gamePassed then gamePassedAttr else gameOverAttr) $
-      vBox [C.hCenter $ str (gameOverMessage g), str "  Restart?\n   (Y/N)"]
-    else emptyWidget
+drawGamePassed :: Widget Name
+drawGamePassed =
+  withAttr gamePassedAttr $
+    vBox
+      [ C.hCenter $ str "Game Passed! Congratulations!",
+        str "Restart? (Y/N)"
+      ]
 
-gameOverMessage :: Game -> String
-gameOverMessage g
-  | g ^. gamePassed = "Game Passed"
-  | otherwise       = "GAME OVER"
+drawStatus :: Game -> Widget Name
+drawStatus g
+  | g ^. gamePassed = drawGamePassed
+  | otherwise = drawGameOver
+
+drawGameOver :: Widget Name
+drawGameOver =
+  withAttr gameOverAttr $
+    vBox
+      [ C.hCenter $ str "Time's up! Game Over.",
+        str "Restart? (Y/N)"
+      ]
 
 drawGrid :: Game -> Widget Name
 drawGrid g =
