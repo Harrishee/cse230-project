@@ -54,8 +54,8 @@ import Game
     score,
     startGame,
     timeElapsed,
-    selectedLevel,
-    isLevelSelection,
+    selectedDifficulty,
+    isDifficultySelection,
   )
 import qualified Graphics.Vty as V
 import Levels (Level (..), initializeLevels, levelId, levelItems, levelScoreRequired, levelWalls)
@@ -96,8 +96,8 @@ drawGame = do
 
 handleEvent :: Game.Game -> BrickEvent Name Tick -> EventM Name (Next Game.Game)
 handleEvent g event =
-  if g ^. Game.isLevelSelection
-    then handleLevelSelectionEvent g event
+  if g ^. Game.isDifficultySelection
+    then handleDifficultySelectionEvent g event
     else handleNormalEvent g event
 
 handleNormalEvent :: Game.Game -> BrickEvent Name Tick -> EventM Name (Next Game.Game)
@@ -238,7 +238,7 @@ drawMainMenu = vBox [ str "Start Game"
 
 drawUI :: Game.Game -> [Widget Name]
 drawUI g
-  | g ^. Game.isLevelSelection = [drawLevelSelection g]
+  | g ^. Game.isDifficultySelection = [drawDifficultySelection g]
   | otherwise =
       [ C.center $
           if g ^. Game.dead || g ^. Game.gamePassed
@@ -388,7 +388,7 @@ theMap =
       (bombAttr, V.red `on` V.black),
       (levelAttr, fg V.blue),
       (whiteTextAttr, fg V.white),
-      (selectedLevelAttr, V.white `on` V.blue)
+      (selectedDifficultyAttr, V.white `on` V.blue)
     ]
 
 playerAttr, playerTrailAttr, emptyAttr, wallAttr, bronzeAttr, silverAttr, goldAttr, wallBreakerAttr, teleportAttr, bombAttr, levelAttr, gameOverAttr, gamePassedAttr, whiteTextAttr :: AttrName
@@ -447,46 +447,46 @@ emojibox =
 
 
 
-drawLevelSelection :: Game.Game -> Widget Name
-drawLevelSelection g =
+drawDifficultySelection :: Game.Game -> Widget Name
+drawDifficultySelection g =
   let levels = ["Level 1", "Level 2", "Level 3", "Level 4"]
-      selectedLevel = g ^. Game.selectedLevel
-      levelWidgets = zipWith (drawLevel selectedLevel) [0..] levels
+      selectedDifficulty = g ^. Game.selectedDifficulty
+      levelWidgets = zipWith (drawDifficulty selectedDifficulty) [0..] levels
   in withBorderStyle BS.unicodeBold $
-       B.borderWithLabel (str "Select Level") $
+       B.borderWithLabel (str "Select Difficulty") $
          vBox levelWidgets
 
-drawLevel :: Int -> Int -> String -> Widget Name
-drawLevel selectedLevel levelIndex levelName =
-  let isSelected = selectedLevel == levelIndex
-      selectAttr = if isSelected then withAttr selectedLevelAttr else id
+drawDifficulty :: Int -> Int -> String -> Widget Name
+drawDifficulty selectedDifficulty levelIndex levelName =
+  let isSelected = selectedDifficulty == levelIndex
+      selectAttr = if isSelected then withAttr selectedDifficultyAttr else id
   in selectAttr $ C.hCenter $ str levelName
 
-selectedLevelAttr :: AttrName
-selectedLevelAttr = "selectedLevelAttr"
+selectedDifficultyAttr :: AttrName
+selectedDifficultyAttr = "selectedDifficultyAttr"
 
-handleLevelSelectionEvent :: Game.Game -> BrickEvent Name Tick -> EventM Name (Next Game.Game)
-handleLevelSelectionEvent g (VtyEvent ev) =
+handleDifficultySelectionEvent :: Game.Game -> BrickEvent Name Tick -> EventM Name (Next Game.Game)
+handleDifficultySelectionEvent g (VtyEvent ev) =
   case ev of
     V.EvKey V.KUp [] -> 
-      let newLevel = max 0 (g ^. Game.selectedLevel - 1)
-      in continue $ g & Game.selectedLevel .~ newLevel
+      let newDifficulty = max 0 (g ^. Game.selectedDifficulty - 1)
+      in continue $ g & Game.selectedDifficulty .~ newDifficulty
 
     V.EvKey V.KDown [] -> 
-      let newLevel = min 3 (g ^. Game.selectedLevel + 1) -- Assuming 4 levels (0 to 3)
-      in continue $ g & Game.selectedLevel .~ newLevel
+      let newDifficulty = min 3 (g ^. Game.selectedDifficulty + 1)
+      in continue $ g & Game.selectedDifficulty .~ newDifficulty
 
     V.EvKey V.KEnter [] -> 
-      let selectedLevel = g ^. Game.selectedLevel
+      let selectedDifficulty = g ^. Game.selectedDifficulty
       in do
-        newGame <- liftIO $ startGameWithLevel selectedLevel
+        newGame <- liftIO $ startGameWithDifficulty selectedDifficulty
         continue newGame
 
     _ -> continue g
-handleLevelSelectionEvent g _ = continue g
+handleDifficultySelectionEvent g _ = continue g
 
-startGameWithLevel :: Int -> IO Game.Game
-startGameWithLevel levelIndex = do
+startGameWithDifficulty :: Int -> IO Game.Game
+startGameWithDifficulty levelIndex = do
   lv <- initializeLevels
   let initialLevel = head lv
   let xm = levelWidth initialLevel `div` 2
@@ -510,7 +510,7 @@ startGameWithLevel levelIndex = do
             _inventory = initialInventory,
             _currentLevel = initialLevel,
             _levels = lv,
-            _isLevelSelection = False,
-            _selectedLevel = levelIndex
+            _isDifficultySelection = False,
+            _selectedDifficulty = levelIndex
           }
   return g
