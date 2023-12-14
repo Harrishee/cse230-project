@@ -27,6 +27,7 @@ library
   exposed-modules:
       Constants
       Game
+      Levels
       Maps
       UI
   other-modules:
