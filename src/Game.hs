@@ -176,7 +176,7 @@ resetGameStateForNewLevel level game =
       _initialTime = levelTimeRequired level,
       _timeElapsed = levelTimeRequired level,
       _currentLevel = level,
-      _inventory = [InventoryItem Bronze 0, InventoryItem Silver 0, InventoryItem Gold 0, InventoryItem WallBreaker 0, InventoryItem Bomb 0]
+      _inventory = [InventoryItem Bronze 0, InventoryItem Silver 0, InventoryItem Gold 0, InventoryItem WallBreaker 0, InventoryItem Teleport 0, InventoryItem Bomb 0]
     }
   where
     initialPlayerPosition = V2 (levelWidth level `div` 2) (levelHeight level `div` 2)
@@ -196,7 +196,7 @@ startGame = do
   let initialLevel = head lv
   let xm = levelWidth initialLevel `div` 2
   let ym = levelHeight initialLevel `div` 2
-  let initialInventory = [InventoryItem Bronze 0, InventoryItem Silver 0, InventoryItem Gold 0]
+  let initialInventory = [InventoryItem Bronze 0, InventoryItem Silver 0, InventoryItem Gold 0, InventoryItem WallBreaker 0, InventoryItem Teleport 0, InventoryItem Bomb 0]
   let g =
         Game
           { _player = S.singleton (V2 xm ym),

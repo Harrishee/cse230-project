@@ -38,13 +38,13 @@ import Control.Concurrent (forkIO, threadDelay)
 import Control.Lens ((&), (.~), (^.))
 import Control.Monad (forever, void)
 import Control.Monad.IO.Class (liftIO)
-import Data.Foldable (find)
+import Data.Foldable (find, toList)
 import Game
   ( Direction (MDown, MLeft, MRight, MUp),
     Game (_currentLevel, _inventory, _items, _walls),
-    InventoryItem (itemQuantity),
+    InventoryItem (..),
     Item (itemCoord, itemType),
-    ItemType (Bomb, Bronze, Gold, WallBreaker, Silver),
+    ItemType (Bomb, Bronze, Silver, Gold, WallBreaker, Teleport),
     dead,
     gamePassed,
     initialGoal,
@@ -58,6 +58,10 @@ import Game
 import qualified Graphics.Vty as V
 import Levels (Level (..), levelHeight, levelWidth)
 import Linear.V2 (V2 (..))
+import System.Random (randomRIO)
+import Data.Sequence (Seq)
+import qualified Data.Sequence as Seq
+import Maps (Coord, Item (..))
 
 data Tick = Tick
 
@@ -120,6 +124,21 @@ handleEvent g (VtyEvent (V.EvKey V.KEsc [])) =
   if not (g ^. Game.dead || g ^. Game.gamePassed)
     then halt g
     else continue g
+handleEvent g (VtyEvent (V.EvKey (V.KChar 't') [])) =
+  if not (g ^. Game.dead || g ^. Game.gamePassed) then do
+    let validPlaces = getValidTeleportPlaces g
+    case validPlaces of
+      [] -> continue g
+      _ -> do
+        randomIndex <- liftIO $ randomRIO (0, length validPlaces - 1)
+        let newPosition = validPlaces !! randomIndex
+        let hasTeleportItem = hasTeleport (_inventory g)
+        if hasTeleportItem
+          then do
+            let updatedInventory = consumeTeleportItem (_inventory g)
+            continue $ teleportPlayer newPosition (g {_inventory = updatedInventory})
+          else continue g
+  else continue g
 handleEvent g (AppEvent Tick) =
   if g ^. Game.dead || g ^. Game.gamePassed
     then continue g
@@ -127,6 +146,46 @@ handleEvent g (AppEvent Tick) =
   where
     fixedDeltaTime = 1.0
 handleEvent g _ = continue g
+
+getValidTeleportPlaces :: Game.Game -> [V2 Int]
+getValidTeleportPlaces g =
+  [ V2 x y | x <- [0 .. currentLevelWidth - 1], y <- [0 .. currentLevelHeight - 1], isValidTeleportPlace g (V2 x y)]
+  where
+    currentLevel = Game._currentLevel g
+    currentLevelHeight = levelHeight currentLevel
+    currentLevelWidth = levelWidth currentLevel
+
+isValidTeleportPlace :: Game -> V2 Int -> Bool
+isValidTeleportPlace g position =
+  position `notElem` (g ^. Game.playerTrail) &&
+  position `notElem` (g ^. Game.player) &&
+  position `notElem` getWalls g &&
+  not (isBombAtPosition position g)
+
+getWalls :: Game -> Seq Coord
+getWalls g = _walls g
+
+isBombAtPosition :: Coord -> Game -> Bool
+isBombAtPosition position g =
+  let bombItems = toList $ Seq.filter (\item -> Game.itemType item == Bomb) (_items g)
+  in position `elem` [Game.itemCoord item | item <- bombItems]
+
+teleportPlayer :: V2 Int -> Game.Game -> Game.Game
+teleportPlayer newPosition g =
+  g & Game.player .~ Seq.singleton newPosition
+
+consumeTeleportItem :: [Game.InventoryItem] -> [Game.InventoryItem]
+consumeTeleportItem [] = []
+consumeTeleportItem (item : rest) =
+  if itemName item == Teleport && itemQuantity item > 0
+    then item { itemQuantity = itemQuantity item - 1 } : rest
+    else item : consumeTeleportItem rest
+
+hasTeleport :: [InventoryItem] -> Bool
+hasTeleport inventory =
+  case find (\item -> itemQuantity item > 0 && itemName item == Teleport) inventory of
+    Just _ -> True
+    Nothing -> False
 
 restartGame :: EventM Name (Next Game.Game)
 restartGame = liftIO Game.startGame >>= continue
@@ -170,7 +229,8 @@ drawInventory inv =
           padLeftRight 1 $ padAll 1 $ withAttr silverAttr $ str $ "Hotdog: " ++ showQuantity 1,
           padLeftRight 1 $ padAll 1 $ withAttr goldAttr $ str $ "Burger: " ++ showQuantity 2,
           padLeftRight 1 $ padAll 1 $ withAttr wallBreakerAttr $ str $ "WallBreaker: " ++ showQuantity 3,
-          padLeftRight 1 $ padAll 1 $ withAttr bombAttr $ str $ "Bomb: " ++ showQuantity 4
+          padLeftRight 1 $ padAll 1 $ withAttr wallBreakerAttr $ str $ "Teleport: " ++ showQuantity 4,
+          padLeftRight 1 $ padAll 1 $ withAttr bombAttr $ str $ "Bomb: " ++ showQuantity 5
         ]
   where
     showQuantity n = maybe "0" (show . Game.itemQuantity) (safeGet n inv)
@@ -238,6 +298,7 @@ drawCell (ItemCell item) =
     Silver -> withAttr silverAttr (str silverChar)
     Gold -> withAttr goldAttr (str goldChar)
     WallBreaker-> withAttr wallBreakerAttr (str wallBreakerChar)
+    Game.WallBreaker -> withAttr wallBreakerAttr (str "WA")
     Bomb -> withAttr bombAttr (str bombChar)
 drawCell Empty = withAttr emptyAttr (str eChar)
 drawCell Wall = withAttr wallAttr (str wallChar)
@@ -270,7 +331,6 @@ bombChar="🎆 "
 wallChar :: String
 wallChar="🧱 "
 
-
 theMap :: AttrMap
 theMap =
   attrMap
@@ -279,17 +339,18 @@ theMap =
       (playerTrailAttr, V.white `on` V.black),
       (gameOverAttr, fg V.red `V.withStyle` V.bold),
       (gamePassedAttr, fg V.green `V.withStyle` V.bold),
-      (wallAttr, V.white `on` V.black),
-      (bronzeAttr, V.magenta `on` V.black),
-      (silverAttr, V.cyan `on` V.black),
-      (goldAttr, V.yellow `on` V.black),
-      (wallBreakerAttr, V.green `on` V.black),
-      (bombAttr, V.red `on` V.black),
+      (wallAttr, V.white `on` V.white),
+      (bronzeAttr, V.magenta `on` V.magenta),
+      (silverAttr, V.cyan `on` V.cyan),
+      (goldAttr, V.yellow `on` V.yellow),
+      (wallBreakerAttr, V.green `on` V.green),
+      (teleportAttr, V.green `on` V.green),
+      (bombAttr, V.red `on` V.red),
       (levelAttr, fg V.blue),
       (whiteTextAttr, fg V.white)
     ]
 
-playerAttr, playerTrailAttr, emptyAttr, wallAttr, bronzeAttr, silverAttr, goldAttr, wallBreakerAttr, bombAttr, levelAttr, gameOverAttr, gamePassedAttr, whiteTextAttr :: AttrName
+playerAttr, playerTrailAttr, emptyAttr, wallAttr, bronzeAttr, silverAttr, goldAttr, wallBreakerAttr, teleportAttr, bombAttr, levelAttr, gameOverAttr, gamePassedAttr, whiteTextAttr :: AttrName
 playerAttr = "playerAttr"
 playerTrailAttr = "playerTrailAttr"
 emptyAttr = "emptyAttr"
@@ -298,6 +359,7 @@ bronzeAttr = "bronzeAttr"
 silverAttr = "silverAttr"
 goldAttr = "goldAttr"
 wallBreakerAttr = "wallBreakerAttr"
+teleportAttr = "teleportAttr"
 bombAttr = "bombAttr"
 levelAttr = "levelAttr"
 gameOverAttr = "gameOver"
@@ -312,7 +374,7 @@ infoBox =
         B.borderWithLabel (str "Guidelines and Controls") $
           vBox
             [ str "Guidelines:",
-              str "  Collect items to reach the goal",
+              str "  Collect items to reach the goal in limited time",
               str "  Please avoid walls and bombs",
               str "  You cannot walk back",
               str "\n",
@@ -321,11 +383,14 @@ infoBox =
               str "  ↓: Move Down",
               str "  ←: Move Left",
               str "  →: Move Right",
-              str "  q: to quit in the game",
+              str "  q/Esc: to quit in the game",
+              str "  t: Use Teleport Item",
               str "\n",
               str "Item Values:",
               str "  Fries: 1 | Hotdog: 2 | Burger: 5",
+              str "\n",
               str "Consumable:",
               str "  Wall Breaker: Break one wall",
+              str "  Teleport    : Teleport to random place",
               str "  More consumables is on the way...."
             ]
