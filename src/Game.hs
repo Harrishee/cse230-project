@@ -21,6 +21,8 @@ module Game
     initialTime,
     initialGoal,
     initializeLevels,
+    selectedLevel,
+    isLevelSelection,
   )
 where
 
@@ -34,7 +36,10 @@ import Linear.V2 (V2 (..), _x, _y)
 import Maps (Coord, Item (..))
 
 data Game = Game
-  { _player :: Player,
+  { 
+    _isLevelSelection :: Bool,
+    _selectedLevel :: Int,
+    _player :: Player,
     _playerTrail :: Seq Coord,
     _items :: Seq Item,
     _walls :: Seq Coord,
@@ -199,7 +204,8 @@ startGame = do
   let initialInventory = [InventoryItem Bronze 0, InventoryItem Silver 0, InventoryItem Gold 0, InventoryItem WallBreaker 0, InventoryItem Teleport 0, InventoryItem Bomb 0]
   let g =
         Game
-          { _player = S.singleton (V2 xm ym),
+          { 
+            _player = S.singleton (V2 xm ym),
             _playerTrail = S.empty,
             _items = levelItems initialLevel,
             _score = 0,
@@ -213,6 +219,8 @@ startGame = do
             _initialTime = levelTimeRequired initialLevel,
             _inventory = initialInventory,
             _currentLevel = initialLevel,
-            _levels = lv
+            _levels = lv,
+            _isLevelSelection = True,
+            _selectedLevel = 0
           }
   return g
