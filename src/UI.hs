@@ -253,9 +253,9 @@ drawCell Player = withAttr playerAttr cw
 drawCell PlayerTrail = withAttr playerTrailAttr cw
 drawCell (ItemCell item) =
   case itemType item of
-    Bronze -> withAttr bronzeAttr cw
-    Silver -> withAttr silverAttr cw
-    Gold -> withAttr goldAttr cw
+    Bronze -> withAttr bronzeAttr (str "B ")
+    Silver -> withAttr silverAttr (str "S ")
+    Gold -> withAttr goldAttr (str "G ")
     Pickable -> withAttr pickableAttr cw
     Bomb -> withAttr bombAttr cw
 drawCell Empty = withAttr emptyAttr cw
@@ -273,9 +273,6 @@ theMap =
       (gameOverAttr, fg V.red `V.withStyle` V.bold),
       (gamePassedAttr, fg V.green `V.withStyle` V.bold),
       (wallAttr, V.white `on` V.white),
-      (bronzeAttr, V.magenta `on` V.magenta),
-      (silverAttr, V.cyan `on` V.cyan),
-      (goldAttr, V.yellow `on` V.yellow),
       (pickableAttr, V.green `on` V.green),
       (bombAttr, V.red `on` V.red)
     ]
@@ -316,6 +313,5 @@ infoBox =
               str "Item Values:",
               str "  Bronze: 1",
               str "  Silver: 2",
-              str "  Gold:   5",
-              str "  pickable: 0"
+              str "  Gold:   5"
             ]

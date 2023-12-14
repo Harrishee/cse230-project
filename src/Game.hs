@@ -79,9 +79,9 @@ movePlayer d g =
       isTrail = nextHeadPos `elem` (g ^. playerTrail)
    in if isBomb
         then g & dead .~ True
-        else if (isWall || isTrail) && not hasPickable
+        else if (isWall || isTrail) && (not hasPickable || (hasPickable && not (isWall || isTrail)))
           then g
-          else if hasPickable
+          else if hasPickable && (isWall || isTrail)
             then
               let newPlayerPos = nextHeadPos <| S.take (S.length (g ^. player) - 1) (g ^. player)
                   newPlayerTrail = g ^. playerTrail S.|> S.index (g ^. player) 0
