@@ -298,7 +298,7 @@ drawCell (ItemCell item) =
     Silver -> withAttr silverAttr (str silverChar)
     Gold -> withAttr goldAttr (str goldChar)
     WallBreaker-> withAttr wallBreakerAttr (str wallBreakerChar)
-    Teleport -> withAttr teleportAttr (str "T ")
+    Teleport -> withAttr teleportAttr (str teleportChar)
     Bomb -> withAttr bombAttr (str bombChar)
 drawCell Empty = withAttr emptyAttr (str eChar)
 drawCell Wall = withAttr wallAttr (str wallChar)
@@ -331,6 +331,10 @@ bombChar="🎆 "
 wallChar :: String
 wallChar="🧱 "
 
+teleportChar :: String
+teleportChar="🚀 "
+
+
 theMap :: AttrMap
 theMap =
   attrMap
@@ -339,13 +343,13 @@ theMap =
       (playerTrailAttr, V.white `on` V.black),
       (gameOverAttr, fg V.red `V.withStyle` V.bold),
       (gamePassedAttr, fg V.green `V.withStyle` V.bold),
-      (wallAttr, V.white `on` V.white),
-      (bronzeAttr, V.magenta `on` V.magenta),
-      (silverAttr, V.cyan `on` V.cyan),
-      (goldAttr, V.yellow `on` V.yellow),
-      (wallBreakerAttr, V.green `on` V.green),
-      (teleportAttr, V.green `on` V.green),
-      (bombAttr, V.red `on` V.red),
+      (wallAttr, V.white `on` V.black),
+      (bronzeAttr, V.magenta `on` V.black),
+      (silverAttr, V.cyan `on` V.black),
+      (goldAttr, V.yellow `on` V.black),
+      (wallBreakerAttr, V.green `on` V.black),
+      (teleportAttr, V.green `on` V.black),
+      (bombAttr, V.red `on` V.black),
       (levelAttr, fg V.blue),
       (whiteTextAttr, fg V.white)
     ]
