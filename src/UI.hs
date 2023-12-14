@@ -41,7 +41,7 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Foldable (find)
 import Game
   ( Direction (MDown, MLeft, MRight, MUp),
-    Game (_currentLevel, _initialTime, _inventory, _items, _walls),
+    Game (_currentLevel, _inventory, _items, _walls),
     InventoryItem (itemQuantity),
     Item (itemCoord, itemType),
     ItemType (Bomb, Bronze, Gold, Pickable, Silver),
@@ -61,11 +61,11 @@ import Linear.V2 (V2 (..))
 
 data Tick = Tick
 
-data Cell = Player | ItemCell Item | Empty | Wall | PlayerTrail
+data Cell = Player | ItemCell Game.Item | Empty | Wall | PlayerTrail
 
 type Name = ()
 
-app :: App Game Tick Name
+app :: App Game.Game Tick Name
 app =
   App
     { appDraw = drawUI,
@@ -77,7 +77,7 @@ app =
 
 drawGame :: IO ()
 drawGame = do
-  g <- startGame
+  g <- Game.startGame
   let builder = V.mkVty V.defaultConfig
   initialVty <- builder
   chan <- newBChan 10
@@ -87,81 +87,81 @@ drawGame = do
       threadDelay 1000000
   void $ customMain initialVty builder (Just chan) app g
 
-handleEvent :: Game -> BrickEvent Name Tick -> EventM Name (Next Game)
+handleEvent :: Game.Game -> BrickEvent Name Tick -> EventM Name (Next Game.Game)
 handleEvent g (VtyEvent (V.EvKey (V.KChar 'y') [])) =
-  if g ^. dead || g ^. gamePassed
+  if g ^. Game.dead || g ^. Game.gamePassed
     then restartGame
     else continue g
 handleEvent g (VtyEvent (V.EvKey (V.KChar 'n') [])) =
-  if g ^. dead || g ^. gamePassed
+  if g ^. Game.dead || g ^. Game.gamePassed
     then halt g
     else continue g
 handleEvent g (VtyEvent (V.EvKey V.KUp [])) =
-  if not (g ^. dead || g ^. gamePassed)
-    then continue $ movePlayer MUp g
+  if not (g ^. Game.dead || g ^. Game.gamePassed)
+    then continue $ Game.movePlayer Game.MUp g
     else continue g
 handleEvent g (VtyEvent (V.EvKey V.KDown [])) =
-  if not (g ^. dead || g ^. gamePassed)
-    then continue $ movePlayer MDown g
+  if not (g ^. Game.dead || g ^. Game.gamePassed)
+    then continue $ Game.movePlayer Game.MDown g
     else continue g
 handleEvent g (VtyEvent (V.EvKey V.KLeft [])) =
-  if not (g ^. dead || g ^. gamePassed)
-    then continue $ movePlayer MLeft g
+  if not (g ^. Game.dead || g ^. Game.gamePassed)
+    then continue $ Game.movePlayer Game.MLeft g
     else continue g
 handleEvent g (VtyEvent (V.EvKey V.KRight [])) =
-  if not (g ^. dead || g ^. gamePassed)
-    then continue $ movePlayer MRight g
+  if not (g ^. Game.dead || g ^. Game.gamePassed)
+    then continue $ Game.movePlayer Game.MRight g
     else continue g
 handleEvent g (VtyEvent (V.EvKey (V.KChar 'q') [])) =
-  if not (g ^. dead || g ^. gamePassed)
+  if not (g ^. Game.dead || g ^. Game.gamePassed)
     then halt g
     else continue g
 handleEvent g (VtyEvent (V.EvKey V.KEsc [])) =
-  if not (g ^. dead || g ^. gamePassed)
+  if not (g ^. Game.dead || g ^. Game.gamePassed)
     then halt g
     else continue g
 handleEvent g (AppEvent Tick) =
-  if g ^. dead || g ^. gamePassed
+  if g ^. Game.dead || g ^. Game.gamePassed
     then continue g
     else continue $ updateGame fixedDeltaTime g
   where
     fixedDeltaTime = 1.0
 handleEvent g _ = continue g
 
-restartGame :: EventM Name (Next Game)
-restartGame = liftIO startGame >>= continue
+restartGame :: EventM Name (Next Game.Game)
+restartGame = liftIO Game.startGame >>= continue
 
-updateGame :: Float -> Game -> Game
+updateGame :: Float -> Game.Game -> Game.Game
 updateGame deltaTime g
-  | g ^. gamePassed = g
-  | g ^. timeElapsed <= 0 =
-    let hasReachedGoal = g ^. score >= g ^. initialGoal
+  | g ^. Game.gamePassed = g
+  | g ^. Game.timeElapsed <= 0 =
+    let hasReachedGoal = g ^. Game.score >= g ^. Game.initialGoal
      in if hasReachedGoal
-          then g & gamePassed .~ True
-          else g & dead .~ True
+          then g & Game.gamePassed .~ True
+          else g & Game.dead .~ True
   | otherwise =
-    let newTime = max 0 (g ^. timeElapsed - round deltaTime)
-        newGame = g & timeElapsed .~ newTime
-        hasReachedGoal = g ^. score >= g ^. initialGoal
+    let newTime = max 0 (g ^. Game.timeElapsed - round deltaTime)
+        newGame = g & Game.timeElapsed .~ newTime
+        hasReachedGoal = g ^. Game.score >= g ^. Game.initialGoal
      in if hasReachedGoal
-          then newGame & gamePassed .~ True
+          then newGame & Game.gamePassed .~ True
           else newGame
 
-drawUI :: Game -> [Widget Name]
+drawUI :: Game.Game -> [Widget Name]
 drawUI g =
   [ C.center $
-      if g ^. dead || g ^. gamePassed
+      if g ^. Game.dead || g ^. Game.gamePassed
         then drawStatus g
         else
           hBox
-            [ padRight (Pad 2) $ drawInventory (_inventory g),
+            [ padRight (Pad 2) $ drawInventory (Game._inventory g),
               padRight (Pad 3) $ drawGoal g,
               drawGrid g,
               padLeft (Pad 3) infoBox
             ]
   ]
 
-drawInventory :: [InventoryItem] -> Widget n
+drawInventory :: [Game.InventoryItem] -> Widget n
 drawInventory inv =
   withBorderStyle BS.unicodeBold $
     B.borderWithLabel (str "Inventory") $
@@ -173,21 +173,21 @@ drawInventory inv =
           padLeftRight 1 $ padAll 1 $ withAttr bombAttr $ str $ "Bomb: " ++ showQuantity 4
         ]
   where
-    showQuantity n = maybe "0" (show . itemQuantity) (safeGet n inv)
+    showQuantity n = maybe "0" (show . Game.itemQuantity) (safeGet n inv)
 
 safeGet :: Int -> [a] -> Maybe a
 safeGet n xs = if n < length xs then Just (xs !! n) else Nothing
 
-drawGoal :: Game -> Widget Name
+drawGoal :: Game.Game -> Widget Name
 drawGoal g =
   withBorderStyle BS.unicodeBold $
     B.borderWithLabel (str "Game Goal") $
       vBox
-        [ padLeftRight 2 $ padAll 1 $ withAttr levelAttr $ str $ "Current Level: " ++ show (levelId $ _currentLevel g),
-          padLeftRight 2 $ padAll 1 $ withAttr gamePassedAttr $ str $ "Goal Score: " ++ show (levelScoreRequired $ _currentLevel g),
-          padLeftRight 2 $ padAll 1 $ str $ "Your Score: " ++ show (g ^. score),
-          padLeftRight 2 $ padAll 1 $ withAttr gamePassedAttr $ str $ "Time Limit: " ++ show (_initialTime g) ++ "s",
-          padLeftRight 2 $ padAll 1 $ str $ "Time Left: " ++ show (g ^. timeElapsed) ++ "s"
+        [ padLeftRight 2 $ padAll 1 $ withAttr levelAttr $ str $ "Current Level: " ++ show (levelId $ Game._currentLevel g),
+          padLeftRight 2 $ padAll 1 $ withAttr gamePassedAttr $ str $ "Goal Score: " ++ show (levelScoreRequired $ Game._currentLevel g),
+          padLeftRight 2 $ padAll 1 $ str $ "Your Score: " ++ show (g ^. Game.score),
+          padLeftRight 2 $ padAll 1 $ withAttr gamePassedAttr $ str $ "Time Limit: " ++ show (levelTimeRequired $ Game._currentLevel g) ++ "s",
+          padLeftRight 2 $ padAll 1 $ str $ "Time Left: " ++ show (g ^. Game.timeElapsed) ++ "s"
         ]
 
 drawGamePassed :: Widget Name
@@ -198,9 +198,9 @@ drawGamePassed =
         C.hCenter $ str "Restart? (Y/N)"
       ]
 
-drawStatus :: Game -> Widget Name
+drawStatus :: Game.Game -> Widget Name
 drawStatus g
-  | g ^. gamePassed = drawGamePassed
+  | g ^. Game.gamePassed = drawGamePassed
   | otherwise = drawGameOver
 
 drawGameOver :: Widget Name
@@ -211,35 +211,35 @@ drawGameOver =
         C.hCenter $ str "Restart? (Y/N)"
       ]
 
-drawGrid :: Game -> Widget Name
+drawGrid :: Game.Game -> Widget Name
 drawGrid g =
   withBorderStyle BS.unicodeBold $
     B.borderWithLabel (str "Player") $
       vBox rows
   where
-    currentLevel = _currentLevel g
+    currentLevel = Game._currentLevel g
     currentLevelHeight = levelHeight currentLevel
     currentLevelWidth = levelWidth currentLevel
     rows = [hBox $ cellsInRow r | r <- [currentLevelHeight - 1, currentLevelHeight - 2 .. 0]]
     cellsInRow y = [drawCoord (V2 x y) | x <- [0 .. currentLevelWidth - 1]]
     drawCoord = drawCell . cellAt
     cellAt c
-      | c `elem` g ^. player = Player
-      | Just item <- find ((== c) . itemCoord) (_items g) = ItemCell item
-      | c `elem` _walls g = Wall
-      | c `elem` (g ^. playerTrail) = PlayerTrail
+      | c `elem` g ^. Game.player = Player
+      | Just item <- find ((== c) . Game.itemCoord) (Game._items g) = ItemCell item
+      | c `elem` Game._walls g = Wall
+      | c `elem` (g ^. Game.playerTrail) = PlayerTrail
       | otherwise = Empty
 
 drawCell :: Cell -> Widget Name
 drawCell Player = withAttr playerAttr cw
 drawCell PlayerTrail = withAttr playerTrailAttr cw
 drawCell (ItemCell item) =
-  case itemType item of
-    Bronze -> withAttr bronzeAttr (str "B ")
-    Silver -> withAttr silverAttr (str "S ")
-    Gold -> withAttr goldAttr (str "G ")
-    Pickable -> withAttr pickableAttr cw
-    Bomb -> withAttr bombAttr cw
+  case Game.itemType item of
+    Game.Bronze -> withAttr bronzeAttr (str "B ")
+    Game.Silver -> withAttr silverAttr (str "S ")
+    Game.Gold -> withAttr goldAttr (str "G ")
+    Game.Pickable -> withAttr pickableAttr cw
+    Game.Bomb -> withAttr bombAttr cw
 drawCell Empty = withAttr emptyAttr cw
 drawCell Wall = withAttr wallAttr cw
 
