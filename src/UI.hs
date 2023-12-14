@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module UI (drawGame) where
+module UI (drawGame, drawMainMenu, handleMainMenuInput) where
 
 import Brick
   ( App (..),
@@ -62,6 +62,7 @@ import System.Random (randomRIO)
 import Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
 import Maps (Coord, Item (..))
+import GameState (GameState(..))
 
 data Tick = Tick
 
@@ -147,6 +148,11 @@ handleEvent g (AppEvent Tick) =
     fixedDeltaTime = 1.0
 handleEvent g _ = continue g
 
+handleMainMenuInput :: V.Event -> GameState
+handleMainMenuInput (V.EvKey (V.KChar '1') []) = InGame
+handleMainMenuInput (V.EvKey (V.KChar '2') []) = Exiting
+handleMainMenuInput _ = MainMenu 
+
 getValidTeleportPlaces :: Game.Game -> [V2 Int]
 getValidTeleportPlaces g =
   [ V2 x y | x <- [0 .. currentLevelWidth - 1], y <- [0 .. currentLevelHeight - 1], isValidTeleportPlace g (V2 x y)]
@@ -205,6 +211,11 @@ updateGame deltaTime g
      in if hasReachedGoal
           then newGame & Game.gamePassed .~ True
           else newGame
+
+drawMainMenu :: Widget n
+drawMainMenu = vBox [ str "Start Game"
+                    , str "Exit Game"
+                    ]
 
 drawUI :: Game.Game -> [Widget Name]
 drawUI g =
