@@ -238,8 +238,8 @@ drawCell (ItemCell item) =
     Game.Bronze -> withAttr bronzeAttr (str "B ")
     Game.Silver -> withAttr silverAttr (str "S ")
     Game.Gold -> withAttr goldAttr (str "G ")
-    Game.Pickable -> withAttr pickableAttr cw
-    Game.Bomb -> withAttr bombAttr cw
+    Game.Pickable -> withAttr pickableAttr (str "P ")
+    Game.Bomb -> withAttr bombAttr (str "X ")
 drawCell Empty = withAttr emptyAttr cw
 drawCell Wall = withAttr wallAttr cw
 
