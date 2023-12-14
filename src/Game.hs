@@ -144,12 +144,15 @@ nextPos :: Game -> Coord
 nextPos game@Game {_dir = d, _player = (a :<| _), _currentLevel = level} =
   let currentLevelWidth = levelWidth level
       currentLevelHeight = levelHeight level
-      newPos = case d of
-        MUp -> a & _y %~ (\y -> min (y + 1) (currentLevelHeight - 1))
-        MDown -> a & _y %~ (\y -> max (y - 1) 0)
-        MLeft -> a & _x %~ (\x -> max (x - 1) 0)
-        MRight -> a & _x %~ (\x -> min (x + 1) (currentLevelWidth - 1))
-   in newPos
+      newX = case d of
+        MLeft -> max (a ^. _x - 1) 0
+        MRight -> min (a ^. _x + 1) (currentLevelWidth - 1)
+        _ -> a ^. _x
+      newY = case d of
+        MDown -> max (a ^. _y - 1) 0
+        MUp -> min (a ^. _y + 1) (currentLevelHeight - 1)
+        _ -> a ^. _y
+   in V2 newX newY
 nextPos _ = error "Player can't be empty!"
 
 checkLevelCompletion :: Game -> Game
@@ -189,8 +192,8 @@ moveToNextLevel game =
 
 startGame :: IO Game
 startGame = do
-  lv <- initializeLevels -- Extract the list of levels from the IO action
-  let initialLevel = head lv -- Now you can use `levels` as a normal list
+  lv <- initializeLevels
+  let initialLevel = head lv
   let xm = levelWidth initialLevel `div` 2
   let ym = levelHeight initialLevel `div` 2
   let initialInventory = [InventoryItem Bronze 0, InventoryItem Silver 0, InventoryItem Gold 0]
