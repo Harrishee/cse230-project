@@ -49,7 +49,6 @@ import Game
     Level (levelId, levelScoreRequired),
     dead,
     gamePassed,
-    height,
     initialGoal,
     movePlayer,
     player,
@@ -57,10 +56,10 @@ import Game
     score,
     startGame,
     timeElapsed,
-    width,
   )
 import qualified Graphics.Vty as V
 import Linear.V2 (V2 (..))
+import Levels (Level(..), levelHeight, levelWidth)
 
 data Tick = Tick
 
@@ -238,8 +237,11 @@ drawGrid g =
     B.borderWithLabel (str "Player") $
       vBox rows
   where
-    rows = [hBox $ cellsInRow r | r <- [height -1, height -2 .. 0]]
-    cellsInRow y = [drawCoord (V2 x y) | x <- [0 .. width -1]]
+    currentLevel = _currentLevel g
+    currentLevelHeight = levelHeight currentLevel
+    currentLevelWidth = levelWidth currentLevel
+    rows = [hBox $ cellsInRow r | r <- [currentLevelHeight - 1, currentLevelHeight - 2 .. 0]]
+    cellsInRow y = [drawCoord (V2 x y) | x <- [0 .. currentLevelWidth - 1]]
     drawCoord = drawCell . cellAt
     cellAt c
       | c `elem` g ^. player = Player
@@ -247,6 +249,8 @@ drawGrid g =
       | c `elem` _walls g = Wall
       | c `elem` (g ^. playerTrail) = PlayerTrail
       | otherwise = Empty
+
+
 
 drawCell :: Cell -> Widget Name
 drawCell Player = withAttr playerAttr cw

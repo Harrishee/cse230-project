@@ -1,14 +1,9 @@
 module Constants
-  ( height,
-    width,
+  ( 
     ItemType (..),
     itemValue,
   )
 where
-
-height, width :: Int
-height = 15
-width = 15
 
 data ItemType = Bronze | Silver | Gold | Pickable | Bomb deriving (Eq, Show)
 

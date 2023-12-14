@@ -14,8 +14,6 @@ module Game
     score,
     player,
     playerTrail,
-    height,
-    width,
     movePlayer,
     gameStarted,
     timeElapsed,
@@ -26,7 +24,7 @@ module Game
   )
 where
 
-import Constants (ItemType (..), height, itemValue, width)
+import Constants (ItemType (..), itemValue)
 import Control.Lens (makeLenses, (%~), (&), (.~), (^.))
 import Data.Foldable (find)
 import Data.Sequence (Seq (..), (<|))
@@ -106,14 +104,17 @@ addItemToInventory newItemName (item : rest)
   | otherwise = item : addItemToInventory newItemName rest
 
 nextPos :: Game -> Coord
-nextPos Game {_dir = d, _player = (a :<| _)} =
-  let newPos = case d of
-        MUp -> a & _y %~ (\y -> min (y + 1) (height - 1))
+nextPos game@(Game {_dir = d, _player = (a :<| _), _currentLevel = level}) =
+  let currentLevelWidth = levelWidth level
+      currentLevelHeight = levelHeight level
+      newPos = case d of
+        MUp -> a & _y %~ (\y -> min (y + 1) (currentLevelHeight - 1))
         MDown -> a & _y %~ (\y -> max (y - 1) 0)
         MLeft -> a & _x %~ (\x -> max (x - 1) 0)
-        MRight -> a & _x %~ (\x -> min (x + 1) (width - 1))
+        MRight -> a & _x %~ (\x -> min (x + 1) (currentLevelWidth - 1))
    in newPos
 nextPos _ = error "Player can't be empty!"
+
 
 checkLevelCompletion :: Game -> Game
 checkLevelCompletion game =
@@ -136,7 +137,8 @@ resetGameStateForNewLevel level game =
       _currentLevel = level
     }
   where
-    initialPlayerPosition = V2 (width `div` 2) (height `div` 2)
+    initialPlayerPosition = V2 (levelWidth level `div` 2) (levelHeight level `div` 2)
+
 
 moveToNextLevel :: Game -> Game
 moveToNextLevel game =
@@ -149,11 +151,11 @@ moveToNextLevel game =
 
 startGame :: IO Game
 startGame = do
-  let lv = initializeLevels
-  let initialLevel = head lv
-  let xm = width `div` 2
-  let ym = height `div` 2
-  let initialInventory = [InventoryItem Bronze 0, InventoryItem Silver 0, InventoryItem Gold 0, InventoryItem Pickable 0, InventoryItem Bomb 0]
+  levels <- initializeLevels -- Extract the list of levels from the IO action
+  let initialLevel = head levels -- Now you can use `levels` as a normal list
+  let xm = levelWidth initialLevel `div` 2
+  let ym = levelHeight initialLevel `div` 2
+  let initialInventory = [InventoryItem Bronze 0, InventoryItem Silver 0, InventoryItem Gold 0]
   let g =
         Game
           { _player = S.singleton (V2 xm ym),
@@ -170,6 +172,8 @@ startGame = do
             _initialTime = 20,
             _inventory = initialInventory,
             _currentLevel = initialLevel,
-            _levels = lv
+            _levels = levels
           }
   return g
+
+
