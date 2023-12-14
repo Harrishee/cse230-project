@@ -41,7 +41,7 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Foldable (find, toList)
 import Game
   ( Direction (MDown, MLeft, MRight, MUp),
-    Game (_currentLevel, _inventory, _items, _walls),
+    Game (..),
     InventoryItem (..),
     Item (itemCoord, itemType),
     ItemType (Bomb, Bronze, Silver, Gold, WallBreaker, Teleport),
@@ -58,7 +58,7 @@ import Game
     isLevelSelection,
   )
 import qualified Graphics.Vty as V
-import Levels (Level (..), levelHeight, levelWidth)
+import Levels (Level (..), initializeLevels, levelId, levelItems, levelScoreRequired, levelWalls)
 import Linear.V2 (V2 (..))
 import System.Random (randomRIO)
 import Data.Sequence (Seq)
@@ -477,20 +477,40 @@ handleLevelSelectionEvent g (VtyEvent ev) =
       in continue $ g & Game.selectedLevel .~ newLevel
 
     V.EvKey V.KEnter [] -> 
-      -- Code to start the game with the selected level
-      -- For example, you might want to set _isLevelSelection to False
-      -- and initialize the game state with the selected level
       let selectedLevel = g ^. Game.selectedLevel
-      in continue g
-      -- in startLevel selectedLevel g >>= continue
+      in do
+        newGame <- liftIO $ startGameWithLevel selectedLevel
+        continue newGame
+
     _ -> continue g
 handleLevelSelectionEvent g _ = continue g
 
--- -- Function to start the game with the selected level
--- startLevel :: Int -> Game.Game -> EventM Name Game.Game
--- startLevel levelIndex g = do
---   -- Code to initialize the game with the selected level
---   -- This might involve setting up the game state for the chosen level
---   -- For example:
---   return $ g & Game.isLevelSelection .~ False
---              -- ... other initializations for the selected level ...
+startGameWithLevel :: Int -> IO Game.Game
+startGameWithLevel levelIndex = do
+  lv <- initializeLevels
+  let initialLevel = head lv
+  let xm = levelWidth initialLevel `div` 2
+  let ym = levelHeight initialLevel `div` 2
+  let initialInventory = [InventoryItem Bronze 0, InventoryItem Silver 0, InventoryItem Gold 0, InventoryItem WallBreaker 0, InventoryItem Teleport 0, InventoryItem Bomb 0]
+  let g =
+        Game
+          { 
+            _player = Seq.singleton (V2 xm ym),
+            _playerTrail = Seq.empty,
+            _items = levelItems initialLevel,
+            _score = 0,
+            _dir = MUp,
+            _dead = False,
+            _walls = levelWalls initialLevel,
+            _gameStarted = False,
+            _timeElapsed = levelTimeRequired initialLevel,
+            _gamePassed = False,
+            _initialGoal = levelScoreRequired initialLevel,
+            _initialTime = levelTimeRequired initialLevel,
+            _inventory = initialInventory,
+            _currentLevel = initialLevel,
+            _levels = lv,
+            _isLevelSelection = False,
+            _selectedLevel = levelIndex
+          }
+  return g
