@@ -67,6 +67,7 @@ import Data.Sequence (Seq)
 import qualified Data.Sequence as Seq
 import Maps (Coord, Item (..))
 import GameState (GameState(..))
+import Control.Monad.Trans.RWS (put)
 
 data Tick = Tick
 
@@ -79,7 +80,7 @@ app =
   App
     { appDraw = drawUI,
       appChooseCursor = neverShowCursor,
-      appHandleEvent = handleEvent,
+      appHandleEvent = handleNormalEvent,
       appStartEvent = return,
       appAttrMap = const theMap
     }
@@ -97,11 +98,11 @@ drawGame = do
       threadDelay 1000000
   void $ customMain initialVty builder (Just chan) app g
 
-handleEvent :: Game.Game -> BrickEvent Name Tick -> EventM Name (Next Game.Game)
-handleEvent g event =
-  if g ^. Game.isDifficultySelection
-    then handleDifficultySelectionEvent g event
-    else handleNormalEvent g event
+-- handleEvent :: Game.Game -> BrickEvent Name Tick -> EventM Name (Next Game.Game)
+-- handleEvent g event =
+--   if g ^. Game.isDifficultySelection
+--     then handleDifficultySelectionEvent g event
+--     else handleNormalEvent g event
 
 handleNormalEvent :: Game.Game -> BrickEvent Name Tick -> EventM Name (Next Game.Game)
 handleNormalEvent g (VtyEvent (V.EvKey (V.KChar 'y') [])) =
@@ -230,9 +231,7 @@ updateGame deltaTime g
           else newGame
 
 drawUI :: Game.Game -> [Widget Name]
-drawUI g
-  | g ^. Game.isDifficultySelection = [drawDifficultySelection g]
-  | otherwise =
+drawUI g =
       [ C.center $
           if g ^. Game.dead || g ^. Game.gamePassed
           then drawStatus g
@@ -242,42 +241,50 @@ drawUI g
               padLeft (Pad 15) $ emojibox,
               hBox
                 [ padRight (Pad 3) infoBox,
-                  padRight (Pad 2) $ drawInventory (Game._inventory g),
-                  padRight (Pad 3) $ drawGoal g,
+                  -- padRight (Pad 2) $ drawInventory (Game._inventory g),
+                  padRight (Pad 3) $ drawGoal g (Game._inventory g),
                   drawGrid g
                 ]
             ]
       ]
 
-drawInventory :: [Game.InventoryItem] -> Widget n
-drawInventory inv =
-  withBorderStyle BS.unicodeBold $
-    B.borderWithLabel (str "Inventory") $
-      vBox
-        -- [ padLeftRight 1 $ padAll 1 $ withAttr bronzeAttr $ str $ "Fries: " ++ showQuantity 0,
-        --   padLeftRight 1 $ padAll 1 $ withAttr silverAttr $ str $ "Hotdog: " ++ showQuantity 1,
-        --   padLeftRight 1 $ padAll 1 $ withAttr goldAttr $ str $ "Burger: " ++ showQuantity 2,
-          [padLeftRight 1 $ padAll 1 $ withAttr wallBreakerAttr $ str $ "WallBreaker: " ++ showQuantity 3,
-          padLeftRight 1 $ padAll 1 $ withAttr wallBreakerAttr $ str $ "Teleport: " ++ showQuantity 4
-          -- padLeftRight 1 $ padAll 1 $ withAttr bombAttr $ str $ "Bomb: " ++ showQuantity 5
-        ]
-  where
-    showQuantity n = maybe "0" (show . Game.itemQuantity) (safeGet n inv)
+-- drawInventory :: [Game.InventoryItem] -> Widget n
+-- drawInventory inv =
+--   withBorderStyle BS.unicodeBold $
+--     B.borderWithLabel (str "Inventory") $
+--       vBox
+--         -- [ padLeftRight 1 $ padAll 1 $ withAttr bronzeAttr $ str $ "Fries: " ++ showQuantity 0,
+--         --   padLeftRight 1 $ padAll 1 $ withAttr silverAttr $ str $ "Hotdog: " ++ showQuantity 1,
+--         --   padLeftRight 1 $ padAll 1 $ withAttr goldAttr $ str $ "Burger: " ++ showQuantity 2,
+--           [padLeftRight 1 $ padAll 1 $ withAttr wallBreakerAttr $ str $ "WallBreaker: " ++ showQuantity 3,
+--           padLeftRight 1 $ padAll 1 $ withAttr wallBreakerAttr $ str $ "Teleport: " ++ showQuantity 4
+--           -- padLeftRight 1 $ padAll 1 $ withAttr bombAttr $ str $ "Bomb: " ++ showQuantity 5
+--         ]
+--   where
+--     showQuantity n = maybe "0" (show . Game.itemQuantity) (safeGet n inv)
 
-safeGet :: Int -> [a] -> Maybe a
-safeGet n xs = if n < length xs then Just (xs !! n) else Nothing
+-- safeGet :: Int -> [a] -> Maybe a
+-- safeGet n xs = if n < length xs then Just (xs !! n) else Nothing
 
-drawGoal :: Game.Game -> Widget Name
-drawGoal g =
+drawGoal :: Game.Game -> [Game.InventoryItem] -> Widget Name
+drawGoal g inv =
   withBorderStyle BS.unicodeBold $
-    B.borderWithLabel (str "Game Goal") $
+    B.borderWithLabel (str "Game Goal and Inventory") $
       vBox
         [ padLeftRight 2 $ padAll 1 $ withAttr levelAttr $ str $ "Current Level: " ++ show (levelId $ Game._currentLevel g),
           padLeftRight 2 $ padAll 1 $ withAttr gamePassedAttr $ str $ "Goal Score: " ++ show (levelScoreRequired $ Game._currentLevel g),
           padLeftRight 2 $ padAll 1 $ str $ "Your Score: " ++ show (g ^. Game.score),
           padLeftRight 2 $ padAll 1 $ withAttr gamePassedAttr $ str $ "Time Limit: " ++ show (levelTimeRequired $ Game._currentLevel g) ++ "s",
-          padLeftRight 2 $ padAll 1 $ str $ "Time Left: " ++ show (g ^. Game.timeElapsed) ++ "s"
+          padLeftRight 2 $ padAll 1 $ str $ "Time Left: " ++ show (g ^. Game.timeElapsed) ++ "s",
+          padLeftRight 1 $ padAll 1 $ withAttr wallBreakerAttr $ str $ "WallBreaker: " ++ showQuantity 3,
+          padLeftRight 1 $ padAll 1 $ withAttr teleportAttr $ str $ "Teleport: " ++ showQuantity 4
         ]
+  where
+    showQuantity n = maybe "0" (show . Game.itemQuantity) (safeGet n inv)
+
+    safeGet :: Int -> [a] -> Maybe a
+    safeGet n xs = if n < length xs then Just (xs !! n) else Nothing
+
 
 drawGamePassed :: Widget Name
 drawGamePassed =
@@ -334,7 +341,7 @@ drawCell Wall = withAttr wallAttr (str wallChar)
 
 
 eChar :: String
-eChar = "🟦 "
+eChar = "⬛️ "
 
 wallBreakerChar :: String
 wallBreakerChar="🧨 "
@@ -380,8 +387,8 @@ theMap =
       (teleportAttr, V.green `on` V.black),
       (bombAttr, V.red `on` V.black),
       (levelAttr, fg V.blue),
-      (whiteTextAttr, fg V.white),
-      (selectedDifficultyAttr, V.white `on` V.blue)
+      (whiteTextAttr, fg V.white)
+      -- (selectedDifficultyAttr, V.white `on` V.blue)
     ]
 
 playerAttr, playerTrailAttr, emptyAttr, wallAttr, bronzeAttr, silverAttr, goldAttr, wallBreakerAttr, teleportAttr, bombAttr, levelAttr, gameOverAttr, gamePassedAttr, whiteTextAttr :: AttrName
@@ -435,88 +442,94 @@ emojibox =
     hLimit 100 $
       withBorderStyle BS.unicodeBold $
         vBox
-          [ str "Player :🚒  Fries :🍟  Wall :🧱   Trail :🚩  Burger :🍔  Wall Breaker :🧨  Teleport :🚀  bomb :🎆"
+          [ str "Player :🚒  Fries :🍟  Wall :🧱   Trail :🚩  Burger :🍔  Wall Breaker :🧨  Teleport :🚀  Bomb :🎆"
           ]
 
+-- drawDifficultySelection :: Game.Game -> Widget Name
+-- drawDifficultySelection g =
+--   let levels = ["Level 1", "Level 2", "Level 3", "Level 4"]
+--       selectedDifficulty = g ^. Game.selectedDifficulty
+--       levelWidgets = zipWith (drawDifficulty selectedDifficulty) [0..] levels
+--   in withBorderStyle BS.unicodeBold $
+--        B.borderWithLabel (str "Select Difficulty") $
+--          vBox levelWidgets
 
+-- drawDifficulty :: Int -> Int -> String -> Widget Name
+-- drawDifficulty selectedDifficulty levelIndex levelName =
+--   let isSelected = selectedDifficulty == levelIndex
+--       selectAttr = if isSelected then withAttr selectedDifficultyAttr else id
+--   in selectAttr $ C.hCenter $ str levelName
 
-drawDifficultySelection :: Game.Game -> Widget Name
-drawDifficultySelection g =
-  let levels = ["Level 1", "Level 2", "Level 3", "Level 4"]
-      selectedDifficulty = g ^. Game.selectedDifficulty
-      levelWidgets = zipWith (drawDifficulty selectedDifficulty) [0..] levels
-  in withBorderStyle BS.unicodeBold $
-       B.borderWithLabel (str "Select Difficulty") $
-         vBox levelWidgets
+-- selectedDifficultyAttr :: AttrName
+-- selectedDifficultyAttr = "selectedDifficultyAttr"
 
-drawDifficulty :: Int -> Int -> String -> Widget Name
-drawDifficulty selectedDifficulty levelIndex levelName =
-  let isSelected = selectedDifficulty == levelIndex
-      selectAttr = if isSelected then withAttr selectedDifficultyAttr else id
-  in selectAttr $ C.hCenter $ str levelName
+-- handleDifficultySelectionEvent :: Game.Game -> BrickEvent Name Tick -> EventM Name (Next Game.Game)
+-- handleDifficultySelectionEvent g (VtyEvent ev) =
+--   case ev of
+--     V.EvKey V.KUp [] -> 
+--       let newDifficulty = max 0 (g ^. Game.selectedDifficulty - 1)
+--       in continue $ g & Game.selectedDifficulty .~ newDifficulty
 
-selectedDifficultyAttr :: AttrName
-selectedDifficultyAttr = "selectedDifficultyAttr"
+--     V.EvKey V.KDown [] -> 
+--       let newDifficulty = min 3 (g ^. Game.selectedDifficulty + 1)
+--       in continue $ g & Game.selectedDifficulty .~ newDifficulty
 
-handleDifficultySelectionEvent :: Game.Game -> BrickEvent Name Tick -> EventM Name (Next Game.Game)
-handleDifficultySelectionEvent g (VtyEvent ev) =
-  case ev of
-    V.EvKey V.KUp [] -> 
-      let newDifficulty = max 0 (g ^. Game.selectedDifficulty - 1)
-      in continue $ g & Game.selectedDifficulty .~ newDifficulty
+--     V.EvKey V.KEnter [] -> 
+--       let selectedDifficulty = g ^. Game.selectedDifficulty
+--       in do
+--         newGame <- liftIO $ startGameWithDifficulty selectedDifficulty
+--         continue newGame
 
-    V.EvKey V.KDown [] -> 
-      let newDifficulty = min 3 (g ^. Game.selectedDifficulty + 1)
-      in continue $ g & Game.selectedDifficulty .~ newDifficulty
+--     _ -> continue g
+-- handleDifficultySelectionEvent g _ = continue g
 
-    V.EvKey V.KEnter [] -> 
-      let selectedDifficulty = g ^. Game.selectedDifficulty
-      in do
-        newGame <- liftIO $ startGameWithDifficulty selectedDifficulty
-        continue newGame
-
-    _ -> continue g
-handleDifficultySelectionEvent g _ = continue g
-
-startGameWithDifficulty :: Int -> IO Game.Game
-startGameWithDifficulty levelIndex = do
-  lv <- initializeLevels
-  let initialLevel = head lv
-  let xm = levelWidth initialLevel `div` 2
-  let ym = levelHeight initialLevel `div` 2
-  let initialInventory = [InventoryItem Bronze 0, InventoryItem Silver 0, InventoryItem Gold 0, InventoryItem WallBreaker 0, InventoryItem Teleport 0, InventoryItem Bomb 0]
-  let g =
-        Game
-          { 
-            _player = Seq.singleton (V2 xm ym),
-            _playerTrail = Seq.empty,
-            _items = levelItems initialLevel,
-            _score = 0,
-            _dir = MUp,
-            _dead = False,
-            _walls = levelWalls initialLevel,
-            _gameStarted = False,
-            _timeElapsed = levelTimeRequired initialLevel,
-            _gamePassed = False,
-            _initialGoal = levelScoreRequired initialLevel,
-            _initialTime = levelTimeRequired initialLevel,
-            _inventory = initialInventory,
-            _currentLevel = initialLevel,
-            _levels = lv,
-            _isDifficultySelection = False,
-            _selectedDifficulty = levelIndex
-          }
-  return g
-handleLevelSelectionEvent g _ = continue g
-
-
+-- startGameWithDifficulty :: Int -> IO Game.Game
+-- startGameWithDifficulty levelIndex = do
+--   lv <- initializeLevels
+--   let initialLevel = head lv
+--   let xm = levelWidth initialLevel `div` 2
+--   let ym = levelHeight initialLevel `div` 2
+--   let initialInventory = [InventoryItem Bronze 0, InventoryItem Silver 0, InventoryItem Gold 0, InventoryItem WallBreaker 0, InventoryItem Teleport 0, InventoryItem Bomb 0]
+--   let g =
+--         Game
+--           { 
+--             _player = Seq.singleton (V2 xm ym),
+--             _playerTrail = Seq.empty,
+--             _items = levelItems initialLevel,
+--             _score = 0,
+--             _dir = MUp,
+--             _dead = False,
+--             _walls = levelWalls initialLevel,
+--             _gameStarted = False,
+--             _timeElapsed = levelTimeRequired initialLevel,
+--             _gamePassed = False,
+--             _initialGoal = levelScoreRequired initialLevel,
+--             _initialTime = levelTimeRequired initialLevel,
+--             _inventory = initialInventory,
+--             _currentLevel = initialLevel,
+--             _levels = lv,
+--             _isDifficultySelection = False,
+--             _selectedDifficulty = levelIndex
+--           }
+--   return g
+-- handleLevelSelectionEvent g _ = continue g
 
 drawMainMenuUI :: IO ()
 drawMainMenuUI = do
-    putStrLn "Welcome to the Game!"
+    putStrLn "Welcome to the Grid Adventure Game!"
+    putStrLn "You are about to embark on a journey through 5 challenging levels"
+    putStrLn "Your goal is to collect enough items to reach the goal in limited time"
+    putStrLn "Please avoid walls and bombs, and you cannot walk back"
+    putStrLn "\n"
+    putStrLn "Item Values:"
+    putStrLn "  Fries : 1  | Hotdog : 2 | Burger : 5 "
+    putStrLn "Consumable:"
+    putStrLn "  Wall Breaker: Break one wall"
+    putStrLn "  Teleport   : Teleport to random place"
+    putStrLn "\n"
+    putStrLn "Press key to continue"
     putStrLn "1. Start Game"
     putStrLn "2. Exit"
-
 
 handleMainMenuInput :: V.Event -> GameState
 handleMainMenuInput (V.EvKey (V.KChar '1') []) = InGame
