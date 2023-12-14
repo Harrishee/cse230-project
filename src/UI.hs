@@ -50,6 +50,7 @@ import Game
     height,
     movePlayer,
     player,
+    playerTrail,
     score,
     startGame,
     timeElapsed,
@@ -60,7 +61,7 @@ import Linear.V2 (V2 (..))
 
 data Tick = Tick
 
-data Cell = Player | ItemCell Item | Empty | Wall
+data Cell = Player | ItemCell Item | Empty | Wall | PlayerTrail
 
 type Name = ()
 
@@ -168,13 +169,15 @@ drawGrid g =
     cellsInRow y = [drawCoord (V2 x y) | x <- [0 .. width -1]]
     drawCoord = drawCell . cellAt
     cellAt c
-      | c `elem` g ^. player = Player
-      | Just item <- find ((== c) . itemCoord) (_items g) = ItemCell item
-      | c `elem` _walls g = Wall
-      | otherwise = Empty
+        | c `elem` g ^. player = Player
+        | Just item <- find ((== c) . itemCoord) (_items g) = ItemCell item
+        | c `elem` _walls g = Wall
+        | c `elem` (g ^. playerTrail) = PlayerTrail
+        | otherwise = Empty
 
 drawCell :: Cell -> Widget Name
 drawCell Player = withAttr playerAttr cw
+drawCell PlayerTrail = withAttr playerTrailAttr cw
 drawCell (ItemCell item) =
   case itemType item of
     Bronze -> withAttr bronzeAttr cw
@@ -191,6 +194,7 @@ theMap =
   attrMap
     V.defAttr
     [ (playerAttr, V.blue `on` V.blue),
+      (playerTrailAttr, V.magenta `on` V.magenta),
       (gameOverAttr, fg V.red `V.withStyle` V.bold),
       (wallAttr, V.white `on` V.white),
       (bronzeAttr, V.red `on` V.red),
@@ -201,8 +205,9 @@ theMap =
 gameOverAttr :: AttrName
 gameOverAttr = "gameOver"
 
-playerAttr, emptyAttr, wallAttr, bronzeAttr, silverAttr, goldAttr :: AttrName
+playerAttr, playerTrailAttr, emptyAttr, wallAttr, bronzeAttr, silverAttr, goldAttr :: AttrName
 playerAttr = "playerAttr"
+playerTrailAttr = "playerTrailAttr"
 emptyAttr = "emptyAttr"
 wallAttr = "wallAttr"
 bronzeAttr = "bronzeAttr"

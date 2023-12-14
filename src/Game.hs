@@ -12,6 +12,7 @@ module Game
     dead,
     score,
     player,
+    playerTrail,
     height,
     width,
     movePlayer,
@@ -31,6 +32,7 @@ import Maps (Coord, Item (..), predefinedItems, predefinedWalls)
 
 data Game = Game
   { _player :: Player,
+    _playerTrail :: Seq Coord,
     _items :: Seq Item,
     _walls :: Seq Coord,
     _score :: Int,
@@ -56,11 +58,13 @@ movePlayer d g =
           else g & dir .~ d & gameStarted .~ True
       nextHeadPos = nextPos movedG
       isWall = nextHeadPos `elem` (g ^. walls)
-   in if isWall
-        then g
+      isTrail = nextHeadPos `elem` (g ^. playerTrail)
+   in if isWall || isTrail
+        then g & dead .~ True
         else
           let newPlayerPos = nextHeadPos <| S.take (S.length (g ^. player) - 1) (g ^. player)
-           in collectItem $ movedG & player .~ newPlayerPos
+              newPlayerTrail = g ^. playerTrail S.|> S.index (g ^. player) 0
+            in collectItem $ movedG & player .~ newPlayerPos & playerTrail .~ newPlayerTrail
 
 collectItem :: Game -> Game
 collectItem g =
@@ -97,6 +101,7 @@ startGame = do
   let g =
         Game
           { _player = S.singleton (V2 xm ym),
+            _playerTrail = S.empty,
             _items = predefinedItems,
             _score = 0,
             _dir = MUp,
