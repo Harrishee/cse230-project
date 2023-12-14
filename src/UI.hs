@@ -215,7 +215,7 @@ drawGamePassed :: Widget Name
 drawGamePassed =
   withAttr gamePassedAttr $
     vBox
-      [ C.hCenter $ str "Game Passed! Congratulations!",
+      [ str "Game Passed! Congratulations!",
         str "Restart? (Y/N)"
       ]
 
@@ -228,7 +228,7 @@ drawGameOver :: Widget Name
 drawGameOver =
   withAttr gameOverAttr $
     vBox
-      [ C.hCenter $ str "Time's up! Game Over.",
+      [ str "Game Over.\n",
         str "Restart? (Y/N)"
       ]
 

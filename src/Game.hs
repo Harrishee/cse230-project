@@ -73,15 +73,50 @@ movePlayer d g =
           then g & dir .~ d
           else g & dir .~ d & gameStarted .~ True
       nextHeadPos = nextPos movedG
+      isBomb = isNextPositionBomb movedG
+      hasPickable = hasPickableItem g
       isWall = nextHeadPos `elem` (g ^. walls)
       isTrail = nextHeadPos `elem` (g ^. playerTrail)
-   in if isWall || isTrail
-        then g
-        else
-          let newPlayerPos = nextHeadPos <| S.take (S.length (g ^. player) - 1) (g ^. player)
-              newPlayerTrail = g ^. playerTrail S.|> S.index (g ^. player) 0
-              updatedGame = movedG & player .~ newPlayerPos & playerTrail .~ newPlayerTrail
-           in checkLevelCompletion $ pickUpItem updatedGame nextHeadPos
+   in if isBomb
+        then g & dead .~ True
+        else if (isWall || isTrail) && not hasPickable
+          then g
+          else if hasPickable
+            then
+              let newPlayerPos = nextHeadPos <| S.take (S.length (g ^. player) - 1) (g ^. player)
+                  newPlayerTrail = g ^. playerTrail S.|> S.index (g ^. player) 0
+                  updatedGame =
+                    movedG
+                      & player .~ newPlayerPos
+                      & playerTrail .~ newPlayerTrail
+                      & inventory %~ consumePickableItem
+               in checkLevelCompletion $ pickUpItem updatedGame nextHeadPos
+            else
+              let newPlayerPos = nextHeadPos <| S.take (S.length (g ^. player) - 1) (g ^. player)
+                  newPlayerTrail = g ^. playerTrail S.|> S.index (g ^. player) 0
+                  updatedGame = movedG & player .~ newPlayerPos & playerTrail .~ newPlayerTrail
+               in checkLevelCompletion $ pickUpItem updatedGame nextHeadPos
+
+consumePickableItem :: [InventoryItem] -> [InventoryItem]
+consumePickableItem [] = []
+consumePickableItem (item : rest)
+  | itemName item == Pickable && itemQuantity item > 0 = item { itemQuantity = itemQuantity item - 1 } : rest
+  | otherwise = item : consumePickableItem rest
+
+hasPickableItem :: Game -> Bool
+hasPickableItem game =
+  case find (\item -> itemName item == Pickable && itemQuantity item > 0) (_inventory game) of
+    Just _ -> True
+    Nothing -> False
+
+isNextPositionBomb :: Game -> Bool
+isNextPositionBomb game =
+  let nextHeadPos = nextPos game
+      itemsAtNextPos = findItemsAtCoord nextHeadPos (_items game)
+  in any (\item -> itemType item == Bomb) itemsAtNextPos
+
+findItemsAtCoord :: Coord -> Seq Item -> Seq Item
+findItemsAtCoord coord items = S.filter (\item -> itemCoord item == coord) items
 
 pickUpItem :: Game -> Coord -> Game
 pickUpItem game coord =
@@ -133,10 +168,12 @@ resetGameStateForNewLevel level game =
       _dead = False,
       _gameStarted = False,
       _timeElapsed = _initialTime game,
-      _currentLevel = level
+      _currentLevel = level,
+      _inventory = [InventoryItem Bronze 0, InventoryItem Silver 0, InventoryItem Gold 0, InventoryItem Pickable 0, InventoryItem Bomb 0]
     }
   where
     initialPlayerPosition = V2 (width `div` 2) (height `div` 2)
+
 
 moveToNextLevel :: Game -> Game
 moveToNextLevel game =
