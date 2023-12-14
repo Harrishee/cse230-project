@@ -79,18 +79,6 @@ movePlayer d g =
               updatedGame = movedG & player .~ newPlayerPos & playerTrail .~ newPlayerTrail
           in pickUpItem updatedGame nextHeadPos
 
--- collectItem :: Game -> Game
--- collectItem g =
---   let curItems = g ^. items
---       curPos = case viewl (g ^. player) of
---         (a :< _) -> a
---         _ -> error "Player sequence is empty"
---    in case find ((== curPos) . itemCoord) curItems of
---         Just item ->
---           let scoreValue = itemValue $ itemType item
---            in g & score %~ (+ scoreValue) & items %~ S.filter ((/= curPos) . itemCoord)
---         Nothing -> g
-
 pickUpItem :: Game -> Coord -> Game
 pickUpItem game coord =
   case findItem coord (_items game) of
@@ -100,7 +88,7 @@ pickUpItem game coord =
           scoreValue = itemValue itemName
       in game & items %~ S.filter ((/= coord) . itemCoord)
               & inventory .~ updatedInventory
-              & score %~ (+ scoreValue)  -- Update the player's score
+              & score %~ (+ scoreValue)
     Nothing -> game
 
 findItem :: Coord -> Seq Item -> Maybe Item
@@ -122,25 +110,11 @@ nextPos Game {_dir = d, _player = (a :<| _)} =
    in newPos
 nextPos _ = error "Player can't be empty!"
 
--- turn :: Direction -> Game -> Game
--- turn dir game =
---   let
---     movedGame = movePlayer dir game
---     playerPos = getCurrentPosition (_playerTrail movedGame)
---   in
---     pickUpItem movedGame playerPos
-
--- getCurrentPosition :: Seq Coord -> Coord
--- getCurrentPosition playerTrail =
---   case viewl playerTrail of
---     S.EmptyL -> error "Player trail is empty"
---     pos :< _ -> pos
-
 startGame :: IO Game
 startGame = do
   let xm = width `div` 2
   let ym = height `div` 2
-  let initialInventory = [ InventoryItem Bronze 0, InventoryItem Silver 0, InventoryItem Gold 0, InventoryItem Pickable 0 ]
+  let initialInventory = [ InventoryItem Bronze 0, InventoryItem Silver 0, InventoryItem Gold 0, InventoryItem Pickable 0, InventoryItem Bomb 0 ]
   let g =
         Game
           { _player = S.singleton (V2 xm ym),

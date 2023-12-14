@@ -44,7 +44,7 @@ import Game
   ( Direction (MDown, MLeft, MRight, MUp),
     Game (_items, _walls, _inventory),
     Item (itemCoord, itemType),
-    ItemType (Bronze, Gold, Silver, Pickable),
+    ItemType (Bronze, Gold, Silver, Pickable, Bomb),
     InventoryItem (itemName, itemQuantity),
     dead,
     gamePassed,
@@ -257,6 +257,7 @@ drawCell (ItemCell item) =
     Silver -> withAttr silverAttr cw
     Gold -> withAttr goldAttr cw
     Pickable -> withAttr pickableAttr cw
+    Bomb -> withAttr bombAttr cw
 drawCell Empty = withAttr emptyAttr cw
 drawCell Wall = withAttr wallAttr cw
 
@@ -268,21 +269,22 @@ theMap =
   attrMap
     V.defAttr
     [ (playerAttr, V.blue `on` V.blue),
-      (playerTrailAttr, V.magenta `on` V.magenta),
+      (playerTrailAttr, V.white `on` V.white),
       (gameOverAttr, fg V.red `V.withStyle` V.bold),
       (gamePassedAttr, fg V.green `V.withStyle` V.bold),
       (wallAttr, V.white `on` V.white),
-      (bronzeAttr, V.red `on` V.red),
+      (bronzeAttr, V.magenta `on` V.magenta),
       (silverAttr, V.cyan `on` V.cyan),
       (goldAttr, V.yellow `on` V.yellow),
-      (pickableAttr, V.green `on` V.green)
+      (pickableAttr, V.green `on` V.green),
+      (bombAttr, V.red `on` V.red)
     ]
 
 gameOverAttr, gamePassedAttr :: AttrName
 gameOverAttr = "gameOver"
 gamePassedAttr = "gamePassed"
 
-playerAttr, playerTrailAttr, emptyAttr, wallAttr, bronzeAttr, silverAttr, goldAttr, pickableAttr :: AttrName
+playerAttr, playerTrailAttr, emptyAttr, wallAttr, bronzeAttr, silverAttr, goldAttr, pickableAttr, bombAttr :: AttrName
 playerAttr = "playerAttr"
 playerTrailAttr = "playerTrailAttr"
 emptyAttr = "emptyAttr"
@@ -291,6 +293,7 @@ bronzeAttr = "bronzeAttr"
 silverAttr = "silverAttr"
 goldAttr = "goldAttr"
 pickableAttr = "pickableAttr"
+bombAttr = "bombAttr"
 
 infoBox :: Widget Name
 infoBox =
