@@ -166,9 +166,9 @@ drawInventory inv =
   withBorderStyle BS.unicodeBold $
     B.borderWithLabel (str "Inventory") $
       vBox
-        [ padLeftRight 1 $ padAll 1 $ withAttr bronzeAttr $ str $ "Bronze: " ++ showQuantity 0,
-          padLeftRight 1 $ padAll 1 $ withAttr silverAttr $ str $ "Silver: " ++ showQuantity 1,
-          padLeftRight 1 $ padAll 1 $ withAttr goldAttr $ str $ "Gold: " ++ showQuantity 2,
+        [ padLeftRight 1 $ padAll 1 $ withAttr bronzeAttr $ str $ "Fries: " ++ showQuantity 0,
+          padLeftRight 1 $ padAll 1 $ withAttr silverAttr $ str $ "Hotdog: " ++ showQuantity 1,
+          padLeftRight 1 $ padAll 1 $ withAttr goldAttr $ str $ "Burger: " ++ showQuantity 2,
           padLeftRight 1 $ padAll 1 $ withAttr wallBreakerAttr $ str $ "WallBreaker: " ++ showQuantity 3,
           padLeftRight 1 $ padAll 1 $ withAttr bombAttr $ str $ "Bomb: " ++ showQuantity 4
         ]
@@ -250,7 +250,7 @@ wallBreakerChar :: String
 wallBreakerChar="🧨 "
 
 playerChar :: String
-playerChar = "🚍 "
+playerChar = "🚒 "
 
 playerTrailChar :: String
 playerTrailChar ="🚩 "
@@ -324,7 +324,7 @@ infoBox =
               str "  q: to quit in the game",
               str "\n",
               str "Item Values:",
-              str "  Bronze: 1 | Silver: 2 | Gold: 5",
+              str "  Fries: 1 | Hotdog: 2 | Burger: 5",
               str "Consumable:",
               str "  Wall Breaker: Break one wall",
               str "  More consumables is on the way...."
