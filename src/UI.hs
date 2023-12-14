@@ -42,9 +42,10 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Foldable (find)
 import Game
   ( Direction (MDown, MLeft, MRight, MUp),
-    Game (_items, _walls),
+    Game (_items, _walls, _inventory),
     Item (itemCoord, itemType),
-    ItemType (Bronze, Gold, Silver),
+    ItemType (Bronze, Gold, Silver, Pickable),
+    InventoryItem (itemName, itemQuantity),
     dead,
     gamePassed,
     gameStarted,
@@ -151,11 +152,20 @@ drawUI g =
   [ C.center $
       hBox
         [ padRight (Pad 2) $ drawGoal g,
+          padRight (Pad 2) $ drawInventory (_inventory g),
           padRight (Pad 2) $ drawStatsAndTimer g,
           drawGrid g,
           padLeft (Pad 2) $ infoBox
         ]
   ]
+
+drawInventory :: [InventoryItem] -> Widget n
+drawInventory [] = emptyWidget
+drawInventory (invItem : rest) =
+  vBox
+    [ str (show (itemName invItem) ++ ": " ++ show (itemQuantity invItem)),
+      drawInventory rest
+    ]
 
 drawStatsAndTimer :: Game -> Widget Name
 drawStatsAndTimer g =
@@ -234,6 +244,7 @@ drawCell (ItemCell item) =
     Bronze -> withAttr bronzeAttr cw
     Silver -> withAttr silverAttr cw
     Gold -> withAttr goldAttr cw
+    Pickable -> withAttr pickableAttr cw
 drawCell Empty = withAttr emptyAttr cw
 drawCell Wall = withAttr wallAttr cw
 
@@ -251,14 +262,15 @@ theMap =
       (wallAttr, V.white `on` V.white),
       (bronzeAttr, V.red `on` V.red),
       (silverAttr, V.cyan `on` V.cyan),
-      (goldAttr, V.yellow `on` V.yellow)
+      (goldAttr, V.yellow `on` V.yellow),
+      (pickableAttr, V.green `on` V.green)
     ]
 
 gameOverAttr, gamePassedAttr :: AttrName
 gameOverAttr = "gameOver"
 gamePassedAttr = "gamePassed"
 
-playerAttr, playerTrailAttr, emptyAttr, wallAttr, bronzeAttr, silverAttr, goldAttr :: AttrName
+playerAttr, playerTrailAttr, emptyAttr, wallAttr, bronzeAttr, silverAttr, goldAttr, pickableAttr :: AttrName
 playerAttr = "playerAttr"
 playerTrailAttr = "playerTrailAttr"
 emptyAttr = "emptyAttr"
@@ -266,6 +278,7 @@ wallAttr = "wallAttr"
 bronzeAttr = "bronzeAttr"
 silverAttr = "silverAttr"
 goldAttr = "goldAttr"
+pickableAttr = "pickableAttr"
 
 infoBox :: Widget Name
 infoBox =
@@ -288,5 +301,6 @@ infoBox =
               str "Item Values:",
               str "  Bronze: 1",
               str "  Silver: 2",
-              str "  Gold:   5"
+              str "  Gold:   5",
+              str "  pickable: 0"
             ]
