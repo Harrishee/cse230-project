@@ -54,6 +54,8 @@ import Game
     score,
     startGame,
     timeElapsed,
+    selectedLevel,
+    isLevelSelection,
   )
 import qualified Graphics.Vty as V
 import Levels (Level (..), levelHeight, levelWidth)
@@ -92,39 +94,53 @@ drawGame = do
   void $ customMain initialVty builder (Just chan) app g
 
 handleEvent :: Game.Game -> BrickEvent Name Tick -> EventM Name (Next Game.Game)
-handleEvent g (VtyEvent (V.EvKey (V.KChar 'y') [])) =
+handleEvent g event =
+  if g ^. Game.isLevelSelection
+    then handleLevelSelectionEvent g event
+    else handleNormalEvent g event
+
+handleNormalEvent :: Game.Game -> BrickEvent Name Tick -> EventM Name (Next Game.Game)
+handleNormalEvent g (VtyEvent (V.EvKey (V.KChar 'y') [])) =
   if g ^. Game.dead || g ^. Game.gamePassed
     then restartGame
     else continue g
-handleEvent g (VtyEvent (V.EvKey (V.KChar 'n') [])) =
+
+handleNormalEvent g (VtyEvent (V.EvKey (V.KChar 'n') [])) =
   if g ^. Game.dead || g ^. Game.gamePassed
     then halt g
     else continue g
-handleEvent g (VtyEvent (V.EvKey V.KUp [])) =
+
+handleNormalEvent g (VtyEvent (V.EvKey V.KUp [])) =
   if not (g ^. Game.dead || g ^. Game.gamePassed)
     then continue $ Game.movePlayer Game.MUp g
     else continue g
-handleEvent g (VtyEvent (V.EvKey V.KDown [])) =
+
+handleNormalEvent g (VtyEvent (V.EvKey V.KDown [])) =
   if not (g ^. Game.dead || g ^. Game.gamePassed)
     then continue $ Game.movePlayer Game.MDown g
     else continue g
-handleEvent g (VtyEvent (V.EvKey V.KLeft [])) =
+
+handleNormalEvent g (VtyEvent (V.EvKey V.KLeft [])) =
   if not (g ^. Game.dead || g ^. Game.gamePassed)
     then continue $ Game.movePlayer Game.MLeft g
     else continue g
-handleEvent g (VtyEvent (V.EvKey V.KRight [])) =
+
+handleNormalEvent g (VtyEvent (V.EvKey V.KRight [])) =
   if not (g ^. Game.dead || g ^. Game.gamePassed)
     then continue $ Game.movePlayer Game.MRight g
     else continue g
-handleEvent g (VtyEvent (V.EvKey (V.KChar 'q') [])) =
+
+handleNormalEvent g (VtyEvent (V.EvKey (V.KChar 'q') [])) =
   if not (g ^. Game.dead || g ^. Game.gamePassed)
     then halt g
     else continue g
-handleEvent g (VtyEvent (V.EvKey V.KEsc [])) =
+
+handleNormalEvent g (VtyEvent (V.EvKey V.KEsc [])) =
   if not (g ^. Game.dead || g ^. Game.gamePassed)
     then halt g
     else continue g
-handleEvent g (VtyEvent (V.EvKey (V.KChar 't') [])) =
+
+handleNormalEvent g (VtyEvent (V.EvKey (V.KChar 't') [])) =
   if not (g ^. Game.dead || g ^. Game.gamePassed) then do
     let validPlaces = getValidTeleportPlaces g
     case validPlaces of
@@ -139,13 +155,16 @@ handleEvent g (VtyEvent (V.EvKey (V.KChar 't') [])) =
             continue $ teleportPlayer newPosition (g {_inventory = updatedInventory})
           else continue g
   else continue g
-handleEvent g (AppEvent Tick) =
+
+handleNormalEvent g (AppEvent Tick) =
   if g ^. Game.dead || g ^. Game.gamePassed
     then continue g
     else continue $ updateGame fixedDeltaTime g
   where
     fixedDeltaTime = 1.0
-handleEvent g _ = continue g
+
+handleNormalEvent g _ = continue g
+
 
 getValidTeleportPlaces :: Game.Game -> [V2 Int]
 getValidTeleportPlaces g =
@@ -207,18 +226,24 @@ updateGame deltaTime g
           else newGame
 
 drawUI :: Game.Game -> [Widget Name]
-drawUI g =
-  [ C.center $
-      if g ^. Game.dead || g ^. Game.gamePassed
-        then drawStatus g
-        else
-          hBox
-            [ padRight (Pad 3) infoBox,
-              padRight (Pad 2) $ drawInventory (Game._inventory g),
-              padRight (Pad 3) $ drawGoal g,
-              drawGrid g
+drawUI g
+  | g ^. Game.isLevelSelection = [drawLevelSelection g]
+  | otherwise =
+      [ C.center $
+          if g ^. Game.dead || g ^. Game.gamePassed
+          then drawStatus g
+          else
+            vBox
+            [
+              padLeft (Pad 15) $ emojibox,
+              hBox
+                [ padRight (Pad 3) infoBox,
+                  padRight (Pad 2) $ drawInventory (Game._inventory g),
+                  padRight (Pad 3) $ drawGoal g,
+                  drawGrid g
+                ]
             ]
-  ]
+      ]
 
 drawInventory :: [Game.InventoryItem] -> Widget n
 drawInventory inv =
@@ -351,7 +376,8 @@ theMap =
       (teleportAttr, V.green `on` V.black),
       (bombAttr, V.red `on` V.black),
       (levelAttr, fg V.blue),
-      (whiteTextAttr, fg V.white)
+      (whiteTextAttr, fg V.white),
+      (selectedLevelAttr, V.white `on` V.blue)
     ]
 
 playerAttr, playerTrailAttr, emptyAttr, wallAttr, bronzeAttr, silverAttr, goldAttr, wallBreakerAttr, teleportAttr, bombAttr, levelAttr, gameOverAttr, gamePassedAttr, whiteTextAttr :: AttrName
@@ -391,10 +417,69 @@ infoBox =
               str "  t: Use Teleport Item",
               str "\n",
               str "Item Values:",
-              str "  Fries: 1 | Hotdog: 2 | Burger: 5",
+              str "  Fries : 1  | Hotdog : 2 | Burger : 5 ",
               str "\n",
               str "Consumable:",
               str "  Wall Breaker: Break one wall",
-              str "  Teleport    : Teleport to random place",
+              str "  Teleport   : Teleport to random place",
               str "  More consumables is on the way...."
             ]
+
+emojibox :: Widget Name
+emojibox =
+  vLimit 20 $
+    hLimit 100 $
+      withBorderStyle BS.unicodeBold $
+        vBox
+          [ str "Player :🚒  Fries :🍟  Wall :🧱   Trail :🚩  Burger :🍔  Wall Breaker :🧨  Teleport :🚀  bomb :🎆"
+          ]
+
+
+
+drawLevelSelection :: Game.Game -> Widget Name
+drawLevelSelection g =
+  let levels = ["Level 1", "Level 2", "Level 3", "Level 4"]
+      selectedLevel = g ^. Game.selectedLevel
+      levelWidgets = zipWith (drawLevel selectedLevel) [0..] levels
+  in withBorderStyle BS.unicodeBold $
+       B.borderWithLabel (str "Select Level") $
+         vBox levelWidgets
+
+drawLevel :: Int -> Int -> String -> Widget Name
+drawLevel selectedLevel levelIndex levelName =
+  let isSelected = selectedLevel == levelIndex
+      selectAttr = if isSelected then withAttr selectedLevelAttr else id
+  in selectAttr $ C.hCenter $ str levelName
+
+selectedLevelAttr :: AttrName
+selectedLevelAttr = "selectedLevelAttr"
+
+handleLevelSelectionEvent :: Game.Game -> BrickEvent Name Tick -> EventM Name (Next Game.Game)
+handleLevelSelectionEvent g (VtyEvent ev) =
+  case ev of
+    V.EvKey V.KUp [] -> 
+      let newLevel = max 0 (g ^. Game.selectedLevel - 1)
+      in continue $ g & Game.selectedLevel .~ newLevel
+
+    V.EvKey V.KDown [] -> 
+      let newLevel = min 3 (g ^. Game.selectedLevel + 1) -- Assuming 4 levels (0 to 3)
+      in continue $ g & Game.selectedLevel .~ newLevel
+
+    V.EvKey V.KEnter [] -> 
+      -- Code to start the game with the selected level
+      -- For example, you might want to set _isLevelSelection to False
+      -- and initialize the game state with the selected level
+      let selectedLevel = g ^. Game.selectedLevel
+      in continue g
+      -- in startLevel selectedLevel g >>= continue
+    _ -> continue g
+handleLevelSelectionEvent g _ = continue g
+
+-- -- Function to start the game with the selected level
+-- startLevel :: Int -> Game.Game -> EventM Name Game.Game
+-- startLevel levelIndex g = do
+--   -- Code to initialize the game with the selected level
+--   -- This might involve setting up the game state for the chosen level
+--   -- For example:
+--   return $ g & Game.isLevelSelection .~ False
+--              -- ... other initializations for the selected level ...
