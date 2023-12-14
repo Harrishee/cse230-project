@@ -38,6 +38,7 @@ import qualified Brick.Widgets.Center as C
 import Control.Concurrent (forkIO, threadDelay)
 import Control.Lens ((&), (.~), (^.))
 import Control.Monad (forever, void)
+import Control.Monad.IO.Class (liftIO)
 import Data.Foldable (find)
 import Game
   ( Direction (MDown, MLeft, MRight, MUp),
@@ -55,6 +56,8 @@ import Game
     startGame,
     timeElapsed,
     width,
+    initialGoal,
+    initialTime,
   )
 import qualified Graphics.Vty as V
 import Linear.V2 (V2 (..))
@@ -88,33 +91,71 @@ drawGame = do
   void $ customMain initialVty builder (Just chan) app g
 
 handleEvent :: Game -> BrickEvent Name Tick -> EventM Name (Next Game)
-handleEvent g (VtyEvent (V.EvKey V.KUp [])) = continue $ movePlayer MUp g
-handleEvent g (VtyEvent (V.EvKey V.KDown [])) = continue $ movePlayer MDown g
-handleEvent g (VtyEvent (V.EvKey V.KLeft [])) = continue $ movePlayer MLeft g
-handleEvent g (VtyEvent (V.EvKey V.KRight [])) = continue $ movePlayer MRight g
-handleEvent g (VtyEvent (V.EvKey (V.KChar 'q') [])) = halt g
-handleEvent g (VtyEvent (V.EvKey V.KEsc [])) = halt g
-handleEvent g (AppEvent Tick) = continue $ updateGame g
+handleEvent g (VtyEvent (V.EvKey (V.KChar 'y') [])) =
+    if g ^. dead || g ^. gamePassed
+        then restartGame
+        else continue g
+handleEvent g (VtyEvent (V.EvKey (V.KChar 'n') [])) =
+    if g ^. dead || g ^. gamePassed
+        then halt g
+        else continue g
+handleEvent g (VtyEvent (V.EvKey V.KUp [])) =
+    if not (g ^. dead || g ^. gamePassed)
+        then continue $ movePlayer MUp g
+        else continue g
+handleEvent g (VtyEvent (V.EvKey V.KDown [])) =
+    if not (g ^. dead || g ^. gamePassed)
+        then continue $ movePlayer MDown g
+        else continue g
+handleEvent g (VtyEvent (V.EvKey V.KLeft [])) =
+    if not (g ^. dead || g ^. gamePassed)
+        then continue $ movePlayer MLeft g
+        else continue g
+handleEvent g (VtyEvent (V.EvKey V.KRight [])) =
+    if not (g ^. dead || g ^. gamePassed)
+        then continue $ movePlayer MRight g
+        else continue g
+handleEvent g (VtyEvent (V.EvKey (V.KChar 'q') [])) =
+    if not (g ^. dead || g ^. gamePassed)
+        then halt g
+        else continue g
+handleEvent g (VtyEvent (V.EvKey V.KEsc [])) =
+    if not (g ^. dead || g ^. gamePassed)
+        then halt g
+        else continue g
+handleEvent g (AppEvent Tick) =
+    if g ^. dead || g ^. gamePassed
+        then continue g
+        else continue $ updateGame fixedDeltaTime g
+    where
+        fixedDeltaTime = 1.0
 handleEvent g _ = continue g
 
-updateGame :: Game -> Game
-updateGame g =
-  let newTime = if g ^. gameStarted then g ^. timeElapsed + 1 else g ^. timeElapsed
-      newGame = g & timeElapsed .~ newTime
-   in if newTime >= 10
-        then g & dead .~ True & gamePassed .~ (g ^. score >= 10)
-        else newGame
+restartGame :: EventM Name (Next Game)
+restartGame = liftIO startGame >>= continue
+
+updateGame :: Float -> Game -> Game
+updateGame deltaTime g
+  | g ^. gamePassed = g
+  | otherwise = 
+      let newTime = max 0 (g ^. timeElapsed - round deltaTime)
+          newGame = g & timeElapsed .~ newTime
+          hasReachedGoal = g ^. score >= g ^. initialGoal
+          timeRemaining = newTime > 0
+      in if hasReachedGoal && timeRemaining
+           then newGame & gamePassed .~ True
+           else newGame
 
 drawUI :: Game -> [Widget Name]
 drawUI g =
   [ C.center $
       hBox
-        [ padRight (Pad 3) $ drawStatsAndTimer g,
+        [ padRight (Pad 2) $ drawGoal g,
+          padRight (Pad 2) $ drawStatsAndTimer g,
           drawGrid g,
-          padLeft (Pad 3) $ infoBox
+          padLeft (Pad 2) $ infoBox
         ]
   ]
-
 
 drawStatsAndTimer :: Game -> Widget Name
 drawStatsAndTimer g =
@@ -148,16 +189,26 @@ drawScore n =
         padAll 1 $
           str $ show n
 
+drawGoal :: Game -> Widget Name
+drawGoal g =
+  withBorderStyle BS.unicodeBold $
+    B.borderWithLabel (str "Game Goal") $
+      vBox
+        [ padAll 1 $ str $ "Goal Points: " ++ show (g ^. initialGoal),
+          padAll 1 $ str $ "Time Limit: " ++ show (g ^. initialTime) ++ "s"
+        ]
+
 drawGameOver :: Game -> Widget Name
 drawGameOver g =
-  if g ^. dead
-    then
-      withAttr gameOverAttr $
-        vBox
-          [ C.hCenter $ str "GAME OVER",
-            C.hCenter $ str $ if g ^. gamePassed then "Pass" else "Fail"
-          ]
+  if g ^. dead || g ^. gamePassed
+    then withAttr (if g ^. gamePassed then gamePassedAttr else gameOverAttr) $
+      vBox [C.hCenter $ str (gameOverMessage g), str "  Restart?\n   (Y/N)"]
     else emptyWidget
+
+gameOverMessage :: Game -> String
+gameOverMessage g
+  | g ^. gamePassed = "Game Passed"
+  | otherwise       = "GAME OVER"
 
 drawGrid :: Game -> Widget Name
 drawGrid g =
@@ -196,14 +247,16 @@ theMap =
     [ (playerAttr, V.blue `on` V.blue),
       (playerTrailAttr, V.magenta `on` V.magenta),
       (gameOverAttr, fg V.red `V.withStyle` V.bold),
+      (gamePassedAttr, fg V.green `V.withStyle` V.bold),
       (wallAttr, V.white `on` V.white),
       (bronzeAttr, V.red `on` V.red),
       (silverAttr, V.cyan `on` V.cyan),
       (goldAttr, V.yellow `on` V.yellow)
     ]
 
-gameOverAttr :: AttrName
+gameOverAttr, gamePassedAttr :: AttrName
 gameOverAttr = "gameOver"
+gamePassedAttr = "gamePassed"
 
 playerAttr, playerTrailAttr, emptyAttr, wallAttr, bronzeAttr, silverAttr, goldAttr :: AttrName
 playerAttr = "playerAttr"
