@@ -14,7 +14,6 @@ import Brick
     attrMap,
     continue,
     customMain,
-    emptyWidget,
     fg,
     hBox,
     hLimit,
@@ -23,8 +22,8 @@ import Brick
     on,
     padAll,
     padLeft,
+    padLeftRight,
     padRight,
-    padTop,
     str,
     vBox,
     vLimit,
@@ -43,10 +42,9 @@ import Data.Foldable (find)
 import Game
   ( Direction (MDown, MLeft, MRight, MUp),
     Game (_currentLevel, _initialTime, _inventory, _items, _walls),
-    InventoryItem (itemName, itemQuantity),
+    InventoryItem (itemQuantity),
     Item (itemCoord, itemType),
     ItemType (Bomb, Bronze, Gold, Pickable, Silver),
-    Level (levelId, levelScoreRequired),
     dead,
     gamePassed,
     initialGoal,
@@ -58,8 +56,8 @@ import Game
     timeElapsed,
   )
 import qualified Graphics.Vty as V
+import Levels (Level (..), levelHeight, levelWidth)
 import Linear.V2 (V2 (..))
-import Levels (Level(..), levelHeight, levelWidth)
 
 data Tick = Tick
 
@@ -152,70 +150,52 @@ updateGame deltaTime g
 drawUI :: Game -> [Widget Name]
 drawUI g =
   [ C.center $
-      hBox
-        [ padRight (Pad 2) $ drawGoal g,
-          padRight (Pad 2) $ drawInventory (_inventory g),
-          padRight (Pad 2) $ drawStats g,
-          drawGrid g,
-          -- padLeft (Pad 2) $ drawCurrentLevel g,
-          padLeft (Pad 2) infoBox
-        ]
+      if g ^. dead || g ^. gamePassed
+        then drawStatus g
+        else
+          hBox
+            [ padRight (Pad 2) $ drawInventory (_inventory g),
+              padRight (Pad 3) $ drawGoal g,
+              drawGrid g,
+              padLeft (Pad 3) infoBox
+            ]
   ]
 
 drawInventory :: [InventoryItem] -> Widget n
-drawInventory [] = emptyWidget
-drawInventory (invItem : rest) =
-  vBox
-    [ str (show (itemName invItem) ++ ": " ++ show (itemQuantity invItem)),
-      drawInventory rest
-    ]
+drawInventory inv =
+  withBorderStyle BS.unicodeBold $
+    B.borderWithLabel (str "Inventory") $
+      vBox
+        [ padLeftRight 1 $ padAll 1 $ withAttr bronzeAttr $ str $ "Bronze: " ++ showQuantity 0,
+          padLeftRight 1 $ padAll 1 $ withAttr silverAttr $ str $ "Silver: " ++ showQuantity 1,
+          padLeftRight 1 $ padAll 1 $ withAttr goldAttr $ str $ "Gold: " ++ showQuantity 2,
+          padLeftRight 1 $ padAll 1 $ withAttr pickableAttr $ str $ "Pickable: " ++ showQuantity 3,
+          padLeftRight 1 $ padAll 1 $ withAttr bombAttr $ str $ "Bomb: " ++ showQuantity 4
+        ]
+  where
+    showQuantity n = maybe "0" (show . itemQuantity) (safeGet n inv)
 
-drawStats :: Game -> Widget Name
-drawStats g
-  | g ^. dead || g ^. gamePassed || g ^. timeElapsed <= 0 =
-    vBox
-      [ drawScore (g ^. score),
-        padTop (Pad 2) $ drawStatus g,
-        padTop (Pad 2) $ drawTimer g
-      ]
-  | otherwise =
-    vBox
-      [ drawScore (g ^. score),
-        padTop (Pad 2) $ drawTimer g
-      ]
-
-drawScore :: Int -> Widget Name
-drawScore n =
-  hLimit 11 $
-    withBorderStyle BS.unicodeBold $
-      B.borderWithLabel (str "Score") $
-        C.hCenter $
-          padAll 1 $ str $ show n
-
-drawTimer :: Game -> Widget Name
-drawTimer g =
-  hLimit 11 $
-    withBorderStyle BS.unicodeBold $
-      B.borderWithLabel (str "Time") $
-        C.hCenter $
-          padAll 1 $ str $ show (g ^. timeElapsed) ++ "s"
+safeGet :: Int -> [a] -> Maybe a
+safeGet n xs = if n < length xs then Just (xs !! n) else Nothing
 
 drawGoal :: Game -> Widget Name
 drawGoal g =
   withBorderStyle BS.unicodeBold $
     B.borderWithLabel (str "Game Goal") $
       vBox
-        [ padAll 1 $ str $ "Goal Points: " ++ show (levelScoreRequired $ _currentLevel g),
-          padAll 1 $ str $ "Time Limit: " ++ show (_initialTime g) ++ "s",
-          padAll 1 $ str $ "Current Level: " ++ show (levelId $ _currentLevel g)
+        [ padLeftRight 2 $ padAll 1 $ withAttr levelAttr $ str $ "Current Level: " ++ show (levelId $ _currentLevel g),
+          padLeftRight 2 $ padAll 1 $ withAttr gamePassedAttr $ str $ "Goal Score: " ++ show (levelScoreRequired $ _currentLevel g),
+          padLeftRight 2 $ padAll 1 $ str $ "Your Score: " ++ show (g ^. score),
+          padLeftRight 2 $ padAll 1 $ withAttr gamePassedAttr $ str $ "Time Limit: " ++ show (_initialTime g) ++ "s",
+          padLeftRight 2 $ padAll 1 $ str $ "Time Left: " ++ show (g ^. timeElapsed) ++ "s"
         ]
 
 drawGamePassed :: Widget Name
 drawGamePassed =
   withAttr gamePassedAttr $
     vBox
-      [ str "Game Passed! Congratulations!",
-        str "Restart? (Y/N)"
+      [ C.hCenter $ str "Game Passed! Congratulations!",
+        C.hCenter $ str "Restart? (Y/N)"
       ]
 
 drawStatus :: Game -> Widget Name
@@ -227,8 +207,8 @@ drawGameOver :: Widget Name
 drawGameOver =
   withAttr gameOverAttr $
     vBox
-      [ str "Game Over.\n",
-        str "Restart? (Y/N)"
+      [ C.hCenter $ str "Time's up! Game Over.",
+        C.hCenter $ str "Restart? (Y/N)"
       ]
 
 drawGrid :: Game -> Widget Name
@@ -249,8 +229,6 @@ drawGrid g =
       | c `elem` _walls g = Wall
       | c `elem` (g ^. playerTrail) = PlayerTrail
       | otherwise = Empty
-
-
 
 drawCell :: Cell -> Widget Name
 drawCell Player = withAttr playerAttr cw
@@ -277,15 +255,16 @@ theMap =
       (gameOverAttr, fg V.red `V.withStyle` V.bold),
       (gamePassedAttr, fg V.green `V.withStyle` V.bold),
       (wallAttr, V.white `on` V.white),
+      (bronzeAttr, V.magenta `on` V.magenta),
+      (silverAttr, V.cyan `on` V.cyan),
+      (goldAttr, V.yellow `on` V.yellow),
       (pickableAttr, V.green `on` V.green),
-      (bombAttr, V.red `on` V.red)
+      (bombAttr, V.red `on` V.red),
+      (levelAttr, fg V.blue),
+      (whiteTextAttr, fg V.white)
     ]
 
-gameOverAttr, gamePassedAttr :: AttrName
-gameOverAttr = "gameOver"
-gamePassedAttr = "gamePassed"
-
-playerAttr, playerTrailAttr, emptyAttr, wallAttr, bronzeAttr, silverAttr, goldAttr, pickableAttr, bombAttr :: AttrName
+playerAttr, playerTrailAttr, emptyAttr, wallAttr, bronzeAttr, silverAttr, goldAttr, pickableAttr, bombAttr, levelAttr, gameOverAttr, gamePassedAttr, whiteTextAttr :: AttrName
 playerAttr = "playerAttr"
 playerTrailAttr = "playerTrailAttr"
 emptyAttr = "emptyAttr"
@@ -295,6 +274,10 @@ silverAttr = "silverAttr"
 goldAttr = "goldAttr"
 pickableAttr = "pickableAttr"
 bombAttr = "bombAttr"
+levelAttr = "levelAttr"
+gameOverAttr = "gameOver"
+gamePassedAttr = "gamePassed"
+whiteTextAttr = "whiteTextAttr"
 
 infoBox :: Widget Name
 infoBox =
@@ -305,17 +288,18 @@ infoBox =
           vBox
             [ str "Guidelines:",
               str "  Collect items to increase your score",
-              str "  Please avoid walls and obstacles",
+              str "  Please avoid walls and bombs",
               str "\n",
               str "Controls:",
               str "  ↑: Move Up",
               str "  ↓: Move Down",
               str "  ←: Move Left",
               str "  →: Move Right",
-              str "  'q' or 'Esc' to quit the game",
+              str "  q: to quit in the game",
               str "\n",
               str "Item Values:",
               str "  Bronze: 1",
               str "  Silver: 2",
-              str "  Gold:   5"
+              str "  Gold:   5",
+              str "  pickable: 0"
             ]
