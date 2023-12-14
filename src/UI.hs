@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module UI (drawGame, drawMainMenu, handleMainMenuInput) where
+module UI (drawGame, drawMainMenuUI, handleMainMenuInput) where
+
+
 
 import Brick
   ( App (..),
@@ -81,6 +83,7 @@ app =
       appStartEvent = return,
       appAttrMap = const theMap
     }
+
 
 drawGame :: IO ()
 drawGame = do
@@ -167,11 +170,6 @@ handleNormalEvent g (AppEvent Tick) =
 handleNormalEvent g _ = continue g
 
 
-handleMainMenuInput :: V.Event -> GameState
-handleMainMenuInput (V.EvKey (V.KChar '1') []) = InGame
-handleMainMenuInput (V.EvKey (V.KChar '2') []) = Exiting
-handleMainMenuInput _ = MainMenu 
-
 getValidTeleportPlaces :: Game.Game -> [V2 Int]
 getValidTeleportPlaces g =
   [ V2 x y | x <- [0 .. currentLevelWidth - 1], y <- [0 .. currentLevelHeight - 1], isValidTeleportPlace g (V2 x y)]
@@ -230,11 +228,6 @@ updateGame deltaTime g
      in if hasReachedGoal
           then newGame & Game.gamePassed .~ True
           else newGame
-
-drawMainMenu :: Widget n
-drawMainMenu = vBox [ str "Start Game"
-                    , str "Exit Game"
-                    ]
 
 drawUI :: Game.Game -> [Widget Name]
 drawUI g
@@ -486,11 +479,16 @@ handleLevelSelectionEvent g (VtyEvent ev) =
     _ -> continue g
 handleLevelSelectionEvent g _ = continue g
 
--- -- Function to start the game with the selected level
--- startLevel :: Int -> Game.Game -> EventM Name Game.Game
--- startLevel levelIndex g = do
---   -- Code to initialize the game with the selected level
---   -- This might involve setting up the game state for the chosen level
---   -- For example:
---   return $ g & Game.isLevelSelection .~ False
---              -- ... other initializations for the selected level ...
+
+
+drawMainMenuUI :: IO ()
+drawMainMenuUI = do
+    putStrLn "Welcome to the Game!"
+    putStrLn "1. Start Game"
+    putStrLn "2. Exit"
+
+
+handleMainMenuInput :: V.Event -> GameState
+handleMainMenuInput (V.EvKey (V.KChar '1') []) = InGame
+handleMainMenuInput (V.EvKey (V.KChar '2') []) = Exiting
+handleMainMenuInput _ = MainMenu

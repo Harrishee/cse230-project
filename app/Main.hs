@@ -1,6 +1,6 @@
 module Main (main) where
 
-import UI (drawGame, drawMainMenu, handleMainMenuInput)
+import UI (drawGame, drawMainMenuUI, handleMainMenuInput)
 import GameState (GameState(..))
 import qualified Graphics.Vty as V
 
@@ -12,11 +12,12 @@ gameLoop state = do
     case state of
         MainMenu -> do
             vty <- V.mkVty V.defaultConfig
+            drawMainMenuUI
             e <- V.nextEvent vty
             let nextState = handleMainMenuInput e
             V.shutdown vty
-            gameLoop nextState  
-        InGame -> do
-            drawGame
-        Exiting -> do
-            return ()
+            case nextState of
+                InGame -> drawGame
+                Exiting -> return ()
+        InGame -> drawGame
+        Exiting -> return ()
