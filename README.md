@@ -49,6 +49,25 @@ To complete the whole project before the deadline, we decided to modify our goal
 
 ## Milestone 3: Final
 
+### Game Introduction:
+
+Join a man on his quest to taste the world's most delicious foods. He travels far and wide, but mischievous foes stand in his way. Help him outsmart these challenges and fulfill his culinary dream.
+
+### Game rules:
+
+- Collect items to reach the goal in a limited time
+- Please avoid walls and bombs
+- You cannot walk back
+- Fries : 1  | Hotdog : 2 | Burger : 5
+- Wall Breaker: You can go through one wall
+- Teleport: Teleport to random place
+
+### Game control:
+
+- up, down, left, right for movement
+- q and Esc for quit the game
+- t for teleport
+
 ### Unit Test
 We have developed unit tests for the `movePlayer` function. These tests will cover various scenarios such as moving the player in different directions, handling walls, bombs, and the use of wall breakers. 
 - `Mock Game State`: The `createMockGame` function creates a mock Game state.
