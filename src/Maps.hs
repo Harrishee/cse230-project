@@ -24,7 +24,7 @@ predefinedMaps =
             ([V2 3 4, V2 4 4, V2 9 3], [Item Bronze (V2 4 9), Item Silver (V2 5 9), Item Gold (V2 6 3), Item Bomb (V2 2 2), Item Teleport (V2 6 6)]),
             ([V2 3 9, V2 4 8, V2 9 3], [Item Bronze (V2 0 1), Item Silver (V2 5 0), Item Teleport (V2 6 2), Item Bomb (V2 2 2), Item WallBreaker (V2 6 6)]),
             ([V2 3 3, V2 4 4, V2 5 5], [Item Bronze (V2 4 9), Item Silver (V2 2 3), Item Gold (V2 6 6), Item Bomb (V2 2 2), Item WallBreaker (V2 7 7)]),
-            ([V2 0 0, V2 4 4, V2 1 1], [Item Bronze (V2 6 6), Item Silver (V2 2 3), Item Gold (V2 2 2), Item Bomb (V2 2 2), Item WallBreaker (V2 7 7)])
+            ([V2 0 0, V2 4 4, V2 1 1], [Item Bronze (V2 6 6), Item Silver (V2 2 3), Item Gold (V2 2 2), Item Bomb (V2 6 1), Item WallBreaker (V2 7 7)])
             -- Add more sets for level 1
         ],
         [ -- Level 2 15x15 10pt
