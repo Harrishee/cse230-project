@@ -424,7 +424,7 @@ infoBox =
               str "  Fries : 1  | Hotdog : 2 | Burger : 5 ",
               str "\n",
               str "Consumable:",
-              str "  Wall Breaker: Break one wall",
+              str "  Wall Breaker: You can go through one wall",
               str "  Teleport   : Teleport to random place",
               str "  More consumables is on the way...."
             ]
@@ -513,7 +513,9 @@ handleLevelSelectionEvent g _ = continue g
 
 drawMainMenuUI :: IO ()
 drawMainMenuUI = do
-    putStrLn "Welcome to the Game!"
+    putStrLn "Welcome to the Game!\n"
+    putStrLn "Join a man on his quest to taste the world's most delicious foods. \nHe travels far and wide, but mischievous foes stand in his way. \nHelp him outsmart these challenges and fulfill his culinary dream. \nReady for a flavorful adventure?\n\n"
+    putStrLn "Please select an option:"
     putStrLn "1. Start Game"
     putStrLn "2. Exit"
 
