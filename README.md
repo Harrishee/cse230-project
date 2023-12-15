@@ -33,6 +33,11 @@ We've implemented the whole module of the project, using different icons to repr
 ### Architecture:
 [image1.png]
 
+- Game.hs: For gaming logic like player movement
+- UI.hs:   Mainly for generating UI
+- Map.hs:  Generating maps
+- Level.hs:For level logic
+
 ### Challenges:
 We found that the inventory is interesting and challenging to implement since it will completely change the game logic. And due to couple exams, assignments, and projects, the time is too limited to complete our whole goal.
 
