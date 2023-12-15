@@ -33,13 +33,14 @@ We've implemented the whole module of the project, using different icons to repr
 ### Architecture
 [image1.png]
 
-### Check List
-- Add timer. 
+### Modified Goal:
+To complete the whole project before the deadline, we decided to modify our goal to the following:
+- Add a timer.
 - Make all places the player has reached become obstacles. 
 - Add more types of maps. 
 - Add more levels and clearance settings. 
 - Optimize item and player icons.
-- Add bomb area which should not be reached or the game will be terminated immediately.
+- Add bomb areas that should not be reached or the game will be terminated immediately.
 - Add unit test
 
 ## Milestone 3: Final
