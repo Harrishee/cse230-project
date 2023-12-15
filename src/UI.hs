@@ -79,7 +79,7 @@ app =
   App
     { appDraw = drawUI,
       appChooseCursor = neverShowCursor,
-      appHandleEvent = handleEvent,
+      appHandleEvent = handleNormalEvent,
       appStartEvent = return,
       appAttrMap = const theMap
     }
@@ -97,11 +97,11 @@ drawGame = do
       threadDelay 1000000
   void $ customMain initialVty builder (Just chan) app g
 
-handleEvent :: Game.Game -> BrickEvent Name Tick -> EventM Name (Next Game.Game)
-handleEvent g event =
-  if g ^. Game.isDifficultySelection
-    then handleDifficultySelectionEvent g event
-    else handleNormalEvent g event
+-- handleEvent :: Game.Game -> BrickEvent Name Tick -> EventM Name (Next Game.Game)
+-- handleEvent g event =
+--   if g ^. Game.isDifficultySelection
+--     then handleDifficultySelectionEvent g event
+--     else handleNormalEvent g event
 
 handleNormalEvent :: Game.Game -> BrickEvent Name Tick -> EventM Name (Next Game.Game)
 handleNormalEvent g (VtyEvent (V.EvKey (V.KChar 'y') [])) =
@@ -230,24 +230,24 @@ updateGame deltaTime g
           else newGame
 
 drawUI :: Game.Game -> [Widget Name]
-drawUI g
-  | g ^. Game.isDifficultySelection = [drawDifficultySelection g]
-  | otherwise =
-      [ C.center $
-          if g ^. Game.dead || g ^. Game.gamePassed
-          then drawStatus g
-          else
-            vBox
-            [
-              padLeft (Pad 15) $ emojibox,
-              hBox
-                [ padRight (Pad 3) infoBox,
-                  padRight (Pad 2) $ drawInventory (Game._inventory g),
-                  padRight (Pad 3) $ drawGoal g,
-                  drawGrid g
-                ]
-            ]
-      ]
+drawUI g =
+    [ C.center $
+        if g ^. Game.dead || g ^. Game.gamePassed
+        then drawStatus g
+        else
+          vBox
+          [
+            padLeft (Pad 15) $ emojibox,
+            hBox
+              [ padRight (Pad 3) infoBox,
+                padRight (Pad 2) $ drawInventory (Game._inventory g),
+                padRight (Pad 3) $ drawGoal g,
+                drawGrid g
+              ]
+          ]
+    ]
+-- | g ^. Game.isDifficultySelection = [drawDifficultySelection g]
+-- | otherwise =
 
 drawInventory :: [Game.InventoryItem] -> Widget n
 drawInventory inv =
@@ -380,8 +380,8 @@ theMap =
       (teleportAttr, V.green `on` V.black),
       (bombAttr, V.red `on` V.black),
       (levelAttr, fg V.blue),
-      (whiteTextAttr, fg V.white),
-      (selectedDifficultyAttr, V.white `on` V.blue)
+      (whiteTextAttr, fg V.white)
+      -- (selectedDifficultyAttr, V.white `on` V.blue)
     ]
 
 playerAttr, playerTrailAttr, emptyAttr, wallAttr, bronzeAttr, silverAttr, goldAttr, wallBreakerAttr, teleportAttr, bombAttr, levelAttr, gameOverAttr, gamePassedAttr, whiteTextAttr :: AttrName
@@ -440,74 +440,74 @@ emojibox =
 
 
 
-drawDifficultySelection :: Game.Game -> Widget Name
-drawDifficultySelection g =
-  let levels = ["Level 1", "Level 2", "Level 3", "Level 4"]
-      selectedDifficulty = g ^. Game.selectedDifficulty
-      levelWidgets = zipWith (drawDifficulty selectedDifficulty) [0..] levels
-  in withBorderStyle BS.unicodeBold $
-       B.borderWithLabel (str "Select Difficulty") $
-         vBox levelWidgets
+-- drawDifficultySelection :: Game.Game -> Widget Name
+-- drawDifficultySelection g =
+--   let levels = ["Level 1", "Level 2", "Level 3", "Level 4"]
+--       selectedDifficulty = g ^. Game.selectedDifficulty
+--       levelWidgets = zipWith (drawDifficulty selectedDifficulty) [0..] levels
+--   in withBorderStyle BS.unicodeBold $
+--        B.borderWithLabel (str "Select Difficulty") $
+--          vBox levelWidgets
 
-drawDifficulty :: Int -> Int -> String -> Widget Name
-drawDifficulty selectedDifficulty levelIndex levelName =
-  let isSelected = selectedDifficulty == levelIndex
-      selectAttr = if isSelected then withAttr selectedDifficultyAttr else id
-  in selectAttr $ C.hCenter $ str levelName
+-- drawDifficulty :: Int -> Int -> String -> Widget Name
+-- drawDifficulty selectedDifficulty levelIndex levelName =
+--   let isSelected = selectedDifficulty == levelIndex
+--       selectAttr = if isSelected then withAttr selectedDifficultyAttr else id
+--   in selectAttr $ C.hCenter $ str levelName
 
-selectedDifficultyAttr :: AttrName
-selectedDifficultyAttr = "selectedDifficultyAttr"
+-- selectedDifficultyAttr :: AttrName
+-- selectedDifficultyAttr = "selectedDifficultyAttr"
 
-handleDifficultySelectionEvent :: Game.Game -> BrickEvent Name Tick -> EventM Name (Next Game.Game)
-handleDifficultySelectionEvent g (VtyEvent ev) =
-  case ev of
-    V.EvKey V.KUp [] -> 
-      let newDifficulty = max 0 (g ^. Game.selectedDifficulty - 1)
-      in continue $ g & Game.selectedDifficulty .~ newDifficulty
+-- handleDifficultySelectionEvent :: Game.Game -> BrickEvent Name Tick -> EventM Name (Next Game.Game)
+-- handleDifficultySelectionEvent g (VtyEvent ev) =
+--   case ev of
+--     V.EvKey V.KUp [] -> 
+--       let newDifficulty = max 0 (g ^. Game.selectedDifficulty - 1)
+--       in continue $ g & Game.selectedDifficulty .~ newDifficulty
 
-    V.EvKey V.KDown [] -> 
-      let newDifficulty = min 3 (g ^. Game.selectedDifficulty + 1)
-      in continue $ g & Game.selectedDifficulty .~ newDifficulty
+--     V.EvKey V.KDown [] -> 
+--       let newDifficulty = min 3 (g ^. Game.selectedDifficulty + 1)
+--       in continue $ g & Game.selectedDifficulty .~ newDifficulty
 
-    V.EvKey V.KEnter [] -> 
-      let selectedDifficulty = g ^. Game.selectedDifficulty
-      in do
-        newGame <- liftIO $ startGameWithDifficulty selectedDifficulty
-        continue newGame
+--     V.EvKey V.KEnter [] -> 
+--       let selectedDifficulty = g ^. Game.selectedDifficulty
+--       in do
+--         newGame <- liftIO $ startGameWithDifficulty selectedDifficulty
+--         continue newGame
 
-    _ -> continue g
-handleDifficultySelectionEvent g _ = continue g
+--     _ -> continue g
+-- handleDifficultySelectionEvent g _ = continue g
 
-startGameWithDifficulty :: Int -> IO Game.Game
-startGameWithDifficulty levelIndex = do
-  lv <- initializeLevels
-  let initialLevel = head lv
-  let xm = levelWidth initialLevel `div` 2
-  let ym = levelHeight initialLevel `div` 2
-  let initialInventory = [InventoryItem Bronze 0, InventoryItem Silver 0, InventoryItem Gold 0, InventoryItem WallBreaker 0, InventoryItem Teleport 0, InventoryItem Bomb 0]
-  let g =
-        Game
-          { 
-            _player = Seq.singleton (V2 xm ym),
-            _playerTrail = Seq.empty,
-            _items = levelItems initialLevel,
-            _score = 0,
-            _dir = MUp,
-            _dead = False,
-            _walls = levelWalls initialLevel,
-            _gameStarted = False,
-            _timeElapsed = levelTimeRequired initialLevel,
-            _gamePassed = False,
-            _initialGoal = levelScoreRequired initialLevel,
-            _initialTime = levelTimeRequired initialLevel,
-            _inventory = initialInventory,
-            _currentLevel = initialLevel,
-            _levels = lv,
-            _isDifficultySelection = False,
-            _selectedDifficulty = levelIndex
-          }
-  return g
-handleLevelSelectionEvent g _ = continue g
+-- startGameWithDifficulty :: Int -> IO Game.Game
+-- startGameWithDifficulty levelIndex = do
+--   lv <- initializeLevels
+--   let initialLevel = head lv
+--   let xm = levelWidth initialLevel `div` 2
+--   let ym = levelHeight initialLevel `div` 2
+--   let initialInventory = [InventoryItem Bronze 0, InventoryItem Silver 0, InventoryItem Gold 0, InventoryItem WallBreaker 0, InventoryItem Teleport 0, InventoryItem Bomb 0]
+--   let g =
+--         Game
+--           { 
+--             _player = Seq.singleton (V2 xm ym),
+--             _playerTrail = Seq.empty,
+--             _items = levelItems initialLevel,
+--             _score = 0,
+--             _dir = MUp,
+--             _dead = False,
+--             _walls = levelWalls initialLevel,
+--             _gameStarted = False,
+--             _timeElapsed = levelTimeRequired initialLevel,
+--             _gamePassed = False,
+--             _initialGoal = levelScoreRequired initialLevel,
+--             _initialTime = levelTimeRequired initialLevel,
+--             _inventory = initialInventory,
+--             _currentLevel = initialLevel,
+--             _levels = lv,
+--             _isDifficultySelection = False,
+--             _selectedDifficulty = levelIndex
+--           }
+--   return g
+-- handleLevelSelectionEvent g _ = continue g
 
 
 
