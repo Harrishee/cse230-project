@@ -41,6 +41,7 @@ To complete the whole project before the deadline, we decided to modify our goal
 - Add more levels and clearance settings. 
 - Optimize item and player icons.
 - Add bomb areas that should not be reached or the game will be terminated immediately.
+- Add inventory systems
 - Add unit test
 
 ## Milestone 3: Final
