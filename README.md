@@ -37,6 +37,9 @@ We've implemented the whole module of the project, using different icons to repr
 - Add more levels and clearance settings. 
 - Optimize item and player icons.
 - Add bomb area which should not be reached or the game will be terminated immediately.
+- Add unit test
+
+## Milestone 3: Final
 
 ### Unit Test
 We have developed unit tests for the `movePlayer` function. These tests will cover various scenarios such as moving the player in different directions, handling walls, bombs, and the use of wall breakers. 
