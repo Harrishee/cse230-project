@@ -30,8 +30,11 @@ The objective is to collect enough points to pass the level before running out o
 ## Milestone 2: Updates
 We've implemented the whole module of the project, using different icons to represent items of different values. There are obstacles(walls and bombs) in the map that cannot be reached.
 
-### Architecture
+### Architecture:
 [image1.png]
+
+### Challenges:
+We found that the inventory is interesting and challenging to implement since it will completely change the game logic. And due to couple exams, assignments, and projects, the time is too limited to complete our whole goal.
 
 ### Modified Goal:
 To complete the whole project before the deadline, we decided to modify our goal to the following:
