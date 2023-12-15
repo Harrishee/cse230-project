@@ -2,7 +2,7 @@
 
 Team members: Yuhan Yang, Fangqi Yuan, Enze Ma, Hanfei He
 
-## Milestone: Proposal
+## Milestone 1: Proposal
 
 ### Introduction
 
@@ -27,7 +27,7 @@ The objective is to collect enough points to pass the level before running out o
 - **Programming Language**: `Haskell`
 - **Library**: `brick` (for UI development)
 
-### Updates
+## Milestone 2: Updates
 We've implemented the whole module of the project, using different icons to represent items of different values. There are obstacles(walls and bombs) in the map that cannot be reached.
 
 ### Check List
