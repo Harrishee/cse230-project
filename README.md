@@ -31,7 +31,8 @@ The objective is to collect enough points to pass the level before running out o
 We've implemented the whole module of the project, using different icons to represent items of different values. There are obstacles(walls and bombs) in the map that cannot be reached.
 
 ### Architecture:
-[ar.jpg]
+
+![Architecture Diagram](ar.jpg)
 
 - Game.hs: For gaming logic like player movement
 - UI.hs:   Mainly for generating UI
