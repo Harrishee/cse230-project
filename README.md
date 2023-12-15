@@ -6,7 +6,7 @@ Team members: Yuhan Yang, Fangqi Yuan, Enze Ma, Hanfei He
 
 ### Introduction
 
-This project involves developing a grid-based adventure game in ``Haskell`` using the ``brick`` library. In this game, players control a *character*, represented by an asterisk `*`, navigating through a series of `15x15` grids. Each grid consists of *paths* (`white spaces`), *walls* (`black spaces`), and three types of collectible items: *bronze*, *silver*, and *gold*, valued at `1`, `2`, and `5` points respectively.
+This project involves developing a grid-based adventure game in ``Haskell`` using the ``brick`` library. In this game, players control a *character*, navigating through a series of grids. Each grid consists of *paths*, *walls*, and three types of collectible items: *Fries*, *Hotdog*, and *Burger*, valued at `1`, `2`, and `5` points respectively.
 
 The game is structured into 5 levels, with increasing complexity and point requirements for completion. In each level, the player must gather items to accumulate points within a set number of steps or a time limit. Once the player moves over a path, it turns into a wall, preventing backtracking.
 
@@ -28,12 +28,18 @@ The objective is to collect enough points to pass the level before running out o
 - **Library**: `brick` (for UI development)
 
 ### Updates
-Currently we've implemented the basic module of the project, using blocks of different colors to represent items of different values. There are obstacles in the map that cannot be reached.
+We've implemented the whole module of the project, using different icons to represent items of different values. There are obstacles(walls and bombs) in the map that cannot be reached.
 
-### To-do List
+### Check List
 - Add timer. 
 - Make all places the player has reached become obstacles. 
 - Add more types of maps. 
 - Add more levels and clearance settings. 
-- Optimize item and player icons (optional).
-- Add bomb area which should not be reached or the game will be terminated immediately (optional).
+- Optimize item and player icons.
+- Add bomb area which should not be reached or the game will be terminated immediately.
+
+### Unit Test
+We have developed unit tests for the `movePlayer` function. These tests will cover various scenarios such as moving the player in different directions, handling walls, bombs, and the use of wall breakers. 
+- `Mock Game State`: The `createMockGame` function creates a mock Game state.
+- `Testing Scenarios`: The tests cover four scenarios: moving without obstacles, hitting a wall, hitting a bomb, and using a wall breaker.
+- `Running Tests`: Compile and run the Spec.hs to execute the tests. You can directly use `stack build` and `stack test` to run the tests.
