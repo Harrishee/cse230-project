@@ -34,10 +34,10 @@ We've implemented the whole module of the project, using different icons to repr
 
 ![Architecture Diagram](ar.jpg)
 
-- Game.hs: For gaming logic like player movement
+- Game.hs: For gaming logic like player movement, pick up items, and using items
 - UI.hs:   Mainly for generating UI
-- Map.hs:  Generating maps
-- Level.hs:For level logic
+- Map.hs:  Generating random maps with levels
+- Level.hs:For level logic which can have multiple levels
 
 ### Challenges:
 We found that the inventory is interesting and challenging to implement since it will completely change the game logic. And due to couple exams, assignments, and projects, the time is too limited to complete our whole goal.
@@ -79,3 +79,6 @@ We have developed unit tests for the `movePlayer` function. These tests will cov
 - `Mock Game State`: The `createMockGame` function creates a mock Game state.
 - `Testing Scenarios`: The tests cover four scenarios: moving without obstacles, hitting a wall, hitting a bomb, and using a wall breaker.
 - `Running Tests`: Compile and run the Spec.hs to execute the tests. You can directly use `stack build` and `stack test` to run the tests.
+
+## Acknowledgment
+- Initially, our understanding of 'Brick' was limited, so we consulted this blog post (https://samtay.github.io/posts/introduction-to-brick) for foundational insights into UI, handlers, and boards. Our game development, however, was a self-driven endeavor, with predominantly   original code crafted by us. Although initially inspired by the blog's approach to adapting the classic game Snake using Brick, our version markedly differs in terms of in-game logic, features, user interface, and player interaction. Rather than replicating Snake, our creation is a maze game, showcasing our code's uniqueness and highlighting the distinct nature of our game.
