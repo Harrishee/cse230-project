@@ -80,5 +80,8 @@ We have developed unit tests for the `movePlayer` function. These tests will cov
 - `Testing Scenarios`: The tests cover four scenarios: moving without obstacles, hitting a wall, hitting a bomb, and using a wall breaker.
 - `Running Tests`: Compile and run the Spec.hs to execute the tests. You can directly use `stack build` and `stack test` to run the tests.
 
+### How to run
+- stack run
+
 ## Acknowledgment
-- Initially, our understanding of 'Brick' was limited, so we consulted this blog post (https://samtay.github.io/posts/introduction-to-brick) for foundational insights into UI, handlers, and boards. Our game development, however, was a self-driven endeavor, with predominantly   original code crafted by us. Although initially inspired by the blog's approach to adapting the classic game Snake using Brick, our version markedly differs in terms of in-game logic, features, user interface, and player interaction. Rather than replicating Snake, our creation is a maze game, showcasing our code's uniqueness and highlighting the distinct nature of our game.
+- Initially, our understanding of 'Brick' was limited, so we consulted this blog post (https://samtay.github.io/posts/introduction-to-brick) for foundational insights into UI, handlers, and boards. Our game development, however, was a self-driven endeavor, with predominantly original code crafted by us. Although initially inspired by the blog's approach to adapting the classic game Snake using Brick,<b> our version markedly differs in terms of in-game logic, features, user interface, and player interaction. Rather than replicating Snake, our creation is a maze game, showcasing our code's uniqueness and highlighting the distinct nature of our game.</b>
